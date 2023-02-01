@@ -13,4 +13,6 @@ When working on a new task (e.g. fixing a bug, adding a feature, etc.)
 5. Commit and push changes to the branch in the cloud
 6. Merge branch with _dev_
 
-Underlying ideas: Commit only working code and define tasks small enough that allow frequent commits so it is easier to backtrack the origin of bugs.
+Underlying ideas: 
+* Commit only working code
+* Define tasks small enough that allow frequent commits so it is easier to backtrack the origin of bugs
