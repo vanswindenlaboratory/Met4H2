@@ -16,3 +16,5 @@ When working on a new task (e.g. fixing a bug, adding a feature, etc.)
 Underlying ideas: 
 * Commit only working code
 * Define tasks small enough that allow frequent commits so it is easier to backtrack the origin of bugs
+
+Follow as much as possible good programming practices as described by PEP8 https://peps.python.org/pep-0008/#programming-recommendations 
