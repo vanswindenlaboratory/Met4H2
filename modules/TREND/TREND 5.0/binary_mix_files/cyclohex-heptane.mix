@@ -1,0 +1,28 @@
+?Cyclohexane/Heptane                                       [CC6/C7]
+?I. Cullimore and E.W. Lemmon, NIST (2010)
+110-82-7/142-82-5         KW0      1.             1.             1.             1.0015        -0.2539         0.             0. 0. 0. 0. 0. 0.
+                          TC1     35.676547     -29.863478      61.393987     -80.738732      63.508489     -21.22608        0. 0. 0. 0. 0. 0.
+                          VC1      0.022014729   -0.030186808    0.063276048   -0.047988399   -0.0048068864   0.024450653    0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KW0
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+ 10 4      0        0 0      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+  2.5574776844118         1.0     1.    0.                 !a(i),t(i),d(i)
+ -7.9846357136353         1.55    1.    0.
+  4.7859131465806         1.7     1.    0.
+ -0.73265392369587        0.25    2.    0.
+  1.3805471345312         1.35    2.    0.
+  0.28349603476365        0.0     3.    0.
+ -0.49087385940425        1.25    3.    0.
+ -0.10291888921447        0.0     4.    0.
+  0.11836314681968        0.7     4.    0.
+  0.000055527385721943    5.4     4.    0.

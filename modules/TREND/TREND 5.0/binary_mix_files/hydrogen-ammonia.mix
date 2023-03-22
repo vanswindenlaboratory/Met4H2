@@ -1,0 +1,20 @@
+?hydrogen/ammonia     (H2/NH3)
+?Neumann et al. (2020)
+1333-74-0/7664-41-7      KWP      0.98824        1.1266         1.0103         0.7298         1.000000  0.        0. 0. 0. 0. 0. 0.
+    TC1     0.000000    0.000000    0.000000    0.000000    0.000000  0.        0. 0. 0. 0. 0. 0.
+    VC1     0.000000    0.000000    0.000000    0.000000    0.000000  0.        0. 0. 0. 0. 0. 0.
+
+#MXM              !mixture model specification
+KWP
+?LITERATURE REFERENCE\
+?T. Neumann,
+? Lehrstuhl Fuer Thermodynamik, Ruhr Universitaet, Bochum, Germany, 2020.
+?  hydrogen - ammonia
+!end of info section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used   !descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0      !default values (i.e. ideal-solution)
+  2  4  0    0  7     2  12     0 0 0 0           !Nterm, Nxcoef, spare, Nspecterms, Nspeccoefs, spare, spare
+ -3.73558   1.2800000000   1.0000000000   1.0000000000    !a(i),T(i),D(i)
+ -7.47092   2.0500000000   2.0000000000   1.0000000000
+  1.98413   2.6000000000   1.0000000000  2.0  2.0  -0.6100000000  -2.0600000000   0.7900000000   0.8000000000  0.0  0.0  0.0
+  1.87191   3.1300000000   2.0000000000  2.0  2.0  -1.6000000000  -1.7400000000   2.1000000000   1.6200000000  0.0  0.0  0.0

@@ -1,0 +1,33 @@
+?Methane/Nitrogen           (C1/N2)
+?Kunz and Wagner (2007)
+74-82-8/7727-37-9         KW3    0.99809883  0.979273013 0.998721377 1.013950311 1.        0.
+                          TC1    7.9914      3.6884      4.2862      0.          0.          0.
+                          VC1    0.0395     -0.522       1.7053     -2.5819      1.8493     -0.4815
+                          TRN   -0.3594      0.9076     -6.1172d-2   3.9842d-2   0.        0.     0.    0.      0.      0.    0.    0.
+                          PR1    0.0311      0.          0.          0.          0.        0.
+#MXM              !mixture model specification 
+KW3  Kunz and Wagner model for hydrocarbon mixtures
+?LITERATURE REFERENCE\
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?\
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?\
+?Methane-Nitrogen
+!end of info section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used   !descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0      !default values (i.e. ideal-solution)
+  2  3  0    7  7     0  0               !Nterm, Nxcoef, spare, Nspecterms, Nspeccoefs, spare, spare
+ -0.98038985517335d-2   0.0    1.        !a(i),t(i),d(i),eta(i),epsilon(i),beta(i),gamma(i)
+  0.42487270143005d-3   1.85   4.
+ -0.34800214576142d-1   7.85   1.   1.     0.5    1.     0.5
+ -0.13333813013896      5.4    2.   1.     0.5    1.     0.5
+ -0.11993694974627d-1   0.0    2.   0.25   0.5    2.5    0.5
+  0.69243379775168d-1   0.75   2.   0.     0.5    3.     0.5
+ -0.31022508148249      2.8    2.   0.     0.5    3.     0.5
+  0.24495491753226      4.45   2.   0.     0.5    3.     0.5
+  0.22369816716981      4.25   3.   0.     0.5    3.     0.5

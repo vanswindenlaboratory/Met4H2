@@ -1,0 +1,159 @@
+chlorobenzene        !Short name
+108-90-7             !CAS number
+chlorobenzene        !Full name
+C6H5Cl               !Chemical formula {C6H5Cl}
+phenyl chloride      !Synonym
+112.557              !Molar mass [g/mol]
+227.9                !Triple point temperature [K]
+405.21               !Normal boiling point [K]
+632.35               !Critical temperature [K]
+4520.6               !Critical pressure [kPa]
+3.24                 !Critical density [mol/L]
+0.2532               !Acentric factor
+1.69                 !Dipole moment [Debye]Nelson, R.D., Lide, D.R., Maryott, A., NSRDS 10, National Bureau of Standards, Washington, D.C. (1967)
+NBP                  !Default reference state
+10.0                 !Version number
+822366d210           !Hash number from InChI Key                                :Hash:
+????                 !UN Number                                                 :UN:
+halocb               !Family                                                    :Family:
+????                 !Heating value (upper) [kJ/mol]                            :Heat:
+
+
+
+
+
+
+________________________________________________________________________________
+
+#EOS   !---Equation of state---
+FEQ    !Helmholtz equation of state for chlorobenzene of Thol et al. (2017).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Thol, M., Alexandrov, I.S., Span, R., Lemmon, E.W.
+? to be published in J. Chem. Eng. Data, 2019.
+?
+!```````````````````````````````````````````````````````````````````````````````
+227.9              !Lower temperature limit [K]
+700.               !Upper temperature limit [K]
+100000.            !Upper pressure limit [kPa]
+10.47              !Maximum density [mol/L]
+CPP                                    !Pointer to Cp0 model
+112.557                                !Molar mass [g/mol]
+227.9                                  !Triple point temperature [K]
+0.00714                                !Pressure at triple point [kPa]
+10.468                                 !Density at triple point [mol/L]
+405.21                                 !Normal boiling point temperature [K]
+0.2532                                 !Acentric factor
+632.35        4520.6       3.24        !Tc [K], pc [kPa], rhoc [mol/L]
+632.35                     3.24        !Reducing parameters [K, mol/L]
+8.3144598                              !Gas constant [J/mol-K]
+  10  4     5  12     0  0             !# terms, # coeff/term for:  "normal" terms, critical, spare
+  0.03675169   1.0     4.  0.          !a(i),t(i),d(i),l(i)
+  1.2629       0.25    1.  0.
+ -2.092176     0.967   1.  0.
+ -0.5062699    1.06    2.  0.
+  0.1826893    0.527   3.  0.
+ -0.9710427    1.93    1.  2.
+ -0.3295967    2.44    3.  2.
+  0.8757209    1.28    2.  1.
+ -0.3980378    3.06    2.  2.
+ -0.02049013   1.013   7.  1.
+  1.307316     0.768   1.  2. 2.    -0.815    -1.45    1.31    1.042    0. 0. 0.
+ -0.07704369   1.4     1.  2. 2.    -1.25     -1.65    1.      1.638    0. 0. 0.
+ -0.00306347   1.2     3.  2. 2.    -3.76    -62.7     0.87    0.823    0. 0. 0.
+ -0.2117575    1.3     2.  2. 2.    -0.876    -1.51    1.29    1.139    0. 0. 0.
+ -0.5223262    1.16    2.  2. 2.    -1.034    -1.24    1.114   0.799    0. 0. 0.
+                                      eta      beta    gamma   epsilon
+                                   EXP[eta*(delta-epsilon)^2+beta*(tau-gamma)^2]
+
+
+#AUX   !---Auxiliary function for Cp0
+CPP    !Ideal gas heat capacity function for chlorobenzene of Thol et al. (2019).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Thol, M., Alexandrov, I.S., Span, R., Lemmon, E.W.
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+1.0     8.3144598  !Reducing parameters for T, Cp0
+1 3   0 0   0 0 0  !Nterms:  polynomial, exponential, cosh, sinh
+ 4.0        0.0
+ 6.2566     4160.0
+ 16.273     1580.0
+ 7.6017     600.0
+
+
+
+
+
+#PS    !---Vapor pressure---
+PS5    !Vapor pressure equation for chlorobenzene of Thol et al. (2019).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Functional Form:  P=Pc*EXP[SUM(Ni*Theta^ti)*Tc/T] where Theta=1-T/Tc, Tc and Pc
+? are the reducing parameters below, which are followed by rows containing Ni and ti.
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+632.35  4520.6     !Reducing parameters
+5 0 0 0 0 0        !Number of terms in equation
+-7.6061    1.0
+ 3.3469    1.50
+-2.8389    1.95
+-3.43      4.43
+-116.4     29.0
+
+
+#DL    !---Saturated liquid density---
+DL1    !Saturated liquid density equation for chlorobenzene of Thol et al. (2019).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Functional Form:  D=Dc*[1+SUM(Ni*Theta^ti)] where Theta=1-T/Tc, Tc and Dc are
+? the reducing parameters below, which are followed by rows containing Ni and ti.
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+632.35  3.24       !Reducing parameters
+6 0 0 0 0 0        !Number of terms in equation
+ 6.4638    0.50
+-17.8      0.88
+ 39.155    1.28
+-47.820    1.71
+ 30.030    2.18
+-7.0790    2.73
+
+
+#DV    !---Saturated vapor density---
+DV3    !Saturated vapor density equation for chlorobenzene of Thol et al. (2019).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Functional Form:  D=Dc*EXP[SUM(Ni*Theta^ti)] where Theta=1-T/Tc, Tc and Dc are
+? the reducing parameters below, which are followed by rows containing Ni and ti.
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+632.35  3.24       !Reducing parameters
+6 0 0 0 0 0        !Number of terms in equation
+-3.9910    0.444
+-39.270    2.04
+ 78.0      2.55
+-69.230    3.08
+-60.590    7.63
+-158.25    16.80
+
+
+@END
+c        1         2         3         4         5         6         7         8
+c2345678901234567890123456789012345678901234567890123456789012345678901234567890

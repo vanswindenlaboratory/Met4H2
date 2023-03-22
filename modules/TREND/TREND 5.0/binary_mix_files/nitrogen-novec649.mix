@@ -1,0 +1,19 @@
+?Nitrogen/Novec649                                         [N2/N649]
+?E.W. Lemmon, NIST (2011)
+7727-37-9/756-13-8         KW8      0.980392156863 1.608          0.707714083510 1.9            0.65           0.             0. 0. 0. 0. 0. 0.
+                          TC5   1145.4933     -4318.0106      5807.1895         0.             0.             0.             0. 0. 0. 0. 0. 0.
+                          VC5      1.056782      -4.3279726      3.727205       0.             0.             0.             0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KW8
+?E.W. Lemmon, preliminary equation fit to PVT, VLE, and HE, 2008.
+?Ethanol-Water
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  6 4      0        0 0      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+  1.09765        0.26    2.    1.                          !a(i),t(i),d(i),e(i)
+  1.94679        7.3     3.    2.
+ -2.16809        5.3     5.    2.
+ -0.137077       2.3     5.    1.
+  0.0486690      0.7     7.    1.
+  1.04024        3.3     6.    2.

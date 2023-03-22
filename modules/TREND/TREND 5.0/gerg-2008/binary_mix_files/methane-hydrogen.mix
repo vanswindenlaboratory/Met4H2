@@ -1,0 +1,28 @@
+?Methane/Hydrogen           (C1/H2)
+?Kunz and Wagner (2007)
+74-82-8/1333-74-0         KW7    1.          1.352643115 1.          1.018702573 1.        0.
+                          TC1  -28.562     728.73     -585.74        0.          0.          0.
+                          VC1   -0.4223      0.7541     -0.353       0.          0.          0.
+                          TRN   -0.2744     -0.1738      0.          0.          0.        0.     0.    0.      0.      0.    0.    0.
+                          PR1    0.0156      0.          0.          0.          0.        0.
+#MXM              !mixture model specification 
+KW7  Kunz and Wagner model for hydrocarbon mixtures
+?LITERATURE REFERENCE\
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?\
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?\
+?Methane-Hydrogen
+!end of info section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used   !descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0      !default values (i.e. ideal-solution)
+  4  3  0    0  0     0  0               !Nterm, Nxcoef, spare, Nspecterms, Nspeccoefs, spare, spare
+ -0.25157134971934      2.0    1.        !a(i),t(i),d(i)
+ -0.62203841111983d-2  -1.0    3.
+  0.88850315184396d-1   1.75   3.
+ -0.35592212573239d-1   1.4    4.

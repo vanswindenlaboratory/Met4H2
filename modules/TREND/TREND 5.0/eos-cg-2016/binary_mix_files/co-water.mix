@@ -1,0 +1,21 @@
+?CO/Water                   (CO/H2O)
+?Gernert (2013)
+630-08-0/7732-18-5        KWD     0.956090   0.8239840   0.9404260   0.7667560   0.9897000   0.0000000
+                          TC1     985.8880   0.0000000   0.0000000   0.0000000   0.0000000   0.0000000
+                          VC1    0.0000000   0.0000000   0.0000000   0.0000000   0.0000000   0.0000000
+
+#MXM              !mixture model specification
+KWD  Gernert (2013)
+?LITERATURE REFERENCE\
+?\
+?Departure function for water - nitrogen, water - oxygen, and water - carbon monoxide 
+!end of info section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used   !descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0      !default values (i.e. ideal-solution)
+  5  4  0    0  7     0  0               !Nterm, Nxcoef, spare, Nspecterms, Nspeccoefs, spare, spare
+  0.401420790000D+01   0.5470000000   1.0000000000   0.0000000000    !a(i),t(i),d(i)
+ -0.115739390000D+01   0.0550000000   1.0000000000   1.0000000000
+ -0.721024250000D+01   1.9250000000   1.0000000000   1.0000000000
+ -0.532512230000D+01   0.5520000000   2.0000000000   1.0000000000
+ -0.221558670000D+01   1.0000000000   4.0000000000   1.0000000000
+ 

@@ -1,0 +1,23 @@
+?Helium/Krypton                                            [HE/KR]
+?E.W. Lemmon, NIST (2017)
+7440-59-7/7439-90-9         KW7      0.790          2.013          1.052          2.016          1.41           0.             0. 0. 0. 0. 0. 0.
+                          TC6     93.711814     621.21927        0.             0.             0.             0.             0. 0. 0. 0. 0. 0.
+                          VC6     -0.057796222    0.25772324     0.             0.             0.             0.             0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KW7
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?Methane-Hydrogen
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  4 4      0        0 0      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+ -0.25157134971934        2.0     1.    0.                 !a(i),t(i),d(i)
+ -0.0062203841111983     -1.0     3.    0.
+  0.088850315184396       1.75    3.    0.
+ -0.035592212573239       1.4     4.    0.

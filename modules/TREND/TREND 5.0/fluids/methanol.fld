@@ -1,0 +1,635 @@
+Methanol             !Short name
+67-56-1              !CAS number
+Methanol             !Full name
+CH3OH                !Chemical formula {CH4O}
+Methyl alcohol       !Synonym
+32.04216             !Molar mass [g/mol]
+175.61               !Triple point temperature [K]
+337.632              !Normal boiling point [K]
+512.6                !Critical temperature [K]
+8103.5               !Critical pressure [kPa]
+8.6                  !Critical density [mol/L]
+0.5625               !Acentric factor
+1.7                  !Dipole moment [Debye]; Reid, Prausnitz, & Poling, McGraw-Hill (1987)
+NBP                  !Default reference state
+10.0                 !Version number
+1230                 !UN Number                                                 :UN:
+alcohol              !Family                                                    :Family:
+764.09               !Heating value (upper) [kJ/mol]                            :Heat:
+2.8                  !GWP (IPCC 2007)                                           :GWP:
+1S/CH4O/c1-2/h2H,1H3                      !Standard InChI String                :InChi:
+OKKJLVBELUTLKV-UHFFFAOYSA-N               !Standard InChI Key                   :InChiKey:
+3d5f67e0  (ethanol)                       !Alternative fluid for mixing rules   :AltID:
+c41aa690                                  !Hash number from InChI Key           :Hash:
+
+
+
+
+________________________________________________________________________________
+
+#EOS   !---Equation of state---
+FEQ    !Helmholtz equation of state for methanol of de Reuck and Craven (1993).
+:TRUECRITICALPOINT:  513.38     8.78517       !True EOS critical point [K, mol/L] (where dP/dD=0 and d^2P/dD^2=0 at constant T)
+:DOI:
+?
+?```````````````````````````````````````````````````````````````````````````````
+?de Reuck, K.M. and Craven, R.J.B.,
+? "Methanol, International Thermodynamic Tables of the Fluid State-12,"
+? IUPAC, Blackwell Scientific Publications, London, 1993.
+?
+?The uncertainties of the equation of state are generally 0.1% in density
+? and 2% in the speed of sound, except in the critical region and high pressures.
+?
+!```````````````````````````````````````````````````````````````````````````````
+175.61             !Lower temperature limit [K]
+620.0              !Upper temperature limit [K]
+800000.0           !Upper pressure limit [kPa]
+35.57              !Maximum density [mol/L]
+CPP                                    !Pointer to Cp0 model
+32.04216                               !Molar mass [g/mol]
+175.61                                 !Triple point temperature [K]
+0.00018629                             !Pressure at triple point [kPa]
+28.230                                 !Density at triple point [mol/L]
+337.632                                !Normal boiling point temperature [K]
+0.5625                                 !Acentric factor
+513.38        8215.85      8.78517     !Tc [K], pc [kPa], rhoc [mol/L]
+513.38                     8.78517     !Reducing parameters [K, mol/L]
+8.31448                                !Gas constant [J/mol-K]
+  36  5   8 12   0 0    0 0  0 0  0 0  !# terms and # coefs/term for normal terms, Gaussian terms, and Gao terms
+-2.80062505988       0.  1.  0.  0.    !a(i),t(i),d(i),l(i)
+ 12.5636372418       1.  1.  0.  0.
+-13.0310563173       2.  1.  0.  0.
+ 3.2659313406        3.  1.  0.  0.
+-4.11425343805       1.  2.  0.  0.
+ 3.46397741254       2.  2.  0.  0.
+-0.083644396759      3.  2.  0.  0.
+-0.369240098923      4.  2.  0.  0.
+ 0.00313180842152    6.  2.  0.  0.
+ 0.603201474111      0.  3.  0.  0.
+-0.231158593638      3.  3.  0.  0.
+ 0.106114844945      4.  3.  0.  0.
+-0.0792228164995     0.  4.  0.  0.
+-0.422419150975e-4   7.  4.  0.  0.
+ 0.00758196739214    1.  5.  0.  0.
+-0.244617434701e-4   6.  6.  0.  0.
+ 0.115080328802e-5   7.  7.  0.  0.
+-12.5099747447       1.  1.  2.  1.01733510223052
+ 27.0392835391       2.  1.  2.  1.01733510223052
+-21.2070717086       3.  1.  2.  1.01733510223052
+ 6.3279947227        4.  1.  2.  1.01733510223052
+ 14.3687921636       1.  2.  2.  1.01733510223052
+-28.7450766617       2.  2.  2.  1.01733510223052
+ 18.5397216068       3.  2.  2.  1.01733510223052
+-3.88720372879       5.  2.  2.  1.01733510223052
+-4.16602487963       1.  3.  2.  1.01733510223052
+ 5.29665875982       2.  4.  2.  1.01733510223052
+ 0.509360272812      1.  5.  2.  1.01733510223052
+-3.30257604839       2.  5.  2.  1.01733510223052
+-0.311045210826      4.  5.  2.  1.01733510223052
+ 0.273460830583      5.  5.  2.  1.01733510223052
+ 0.518916583979      2.  6.  2.  1.01733510223052
+-0.00227570803104    5.  9.  2.  1.01733510223052
+ 0.0211658196182     9.  6.  4.  1.03497071023039
+-0.0114335123221    14.  6.  4.  1.03497071023039
+ 0.00249860798459   19.  4.  6.  1.05291203329783
+-8.19291988442       0.  1.  2. 1.  -4.06934040892209  3.8940745646517  1.54080254509371 0.    0. 0. 0.
+ 0.478601004557      0.  1.  3. 1.  -8.20892015621185  3.8940745646517  1.54080254509371 0.    0. 0. 0.
+-0.444161392885      0.  1.  2. 1.  -9.15601592007471  3.8940745646517  1.54080254509371 0.    0. 0. 0.
+ 0.17962181041       0.  1.  4. 1.  -83.8326275286616  3.8940745646517  1.54080254509371 0.    0. 0. 0.
+-0.687602278259      0.  1.  2. 1.  -16.2773616356884  3.8940745646517  1.54080254509371 0.    0. 0. 0.
+ 2.40459848295       0.  3.  3. 1.  -27.705105527215   23.0649031906293 1.08389789427588 0.    0. 0. 0.
+-6.88463987466       0.  3.  2. 1.  -16.2773616356884  23.0649031906293 1.08389789427588 0.    0. 0. 0.
+ 1.13992982501       0.  3.  4. 1.  -264.95250181898   23.0649031906293 1.08389789427588 0.    0. 0. 0.
+
+
+#AUX   !---Auxiliary function for Cp0
+CPP    !Ideal gas heat capacity function for methanol of de Reuck and Craven (1993).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?de Reuck, K.M. and Craven, R.J.B., 1993.
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+1.0     8.31448    !Reducing parameters for T, Cp0
+1 7   0 0   0 0 0  !Nterms:  polynomial, exponential, cosh, sinh
+ 3.9007912  0.0
+ 10.992677  2115.01542
+ 18.33683   1676.18569
+-16.366004  1935.16717
+-6.2332348  1504.97016
+ 2.8035363  4222.83691
+ 1.0778099  5296.17127
+ 0.96965697 273.36934
+
+
+#AUX   !---Auxiliary function for PX0
+PX0    !Helmholtz energy ideal-gas function for methanol of de Reuck and Craven (1993).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?de Reuck, K.M. and Craven, R.J.B., 1993.
+?
+!```````````````````````````````````````````````````````````````````````````````
+1 2  7  0 0  0 0 0               !Nterms:  ai*log(tau**ti); ai*tau**ti; ai*log(1-exp(bi*tau))
+  2.9007912             1.0      !ai, ti for [ai*log(tau**ti)] terms
+ -4.4231521797113365    0.0      !aj, ti for [ai*tau**ti] terms
+  5.4815623918310443    1.0      !aj, ti for [ai*tau**ti] terms
+  10.992677  2115.01542          !aj, ti for [ai*log(1-exp(-ti/T)] terms
+  18.33683   1676.18569
+ -16.366004  1935.16717
+ -6.2332348  1504.97016
+  2.8035363  4222.83691
+  1.0778099  5296.17127
+  0.96965697 273.36934
+
+
+
+--------------------------------------------------------------------------------
+  
+  
+@EOS               !equation of state specification
+FE4  Helmholtz equation of state for methanol of Piazza and Span (2013)
+?L. Piazza, R. Span, 
+?"An equation of state for methanol including the association term of SAFT",
+?Fluid Phase equilibria, 349:12-24, 2013.
+!end of info section
+175.50             !lower temperature [K]
+620.00             !upper temperature [K]	
+800000.0           !upper pressure [kPa]		
+28.0882            !maximum density [mol/L]
+CP4                                     !pointer to Cp0 model
+32.041860                               !molecular weight [g/mol]
+175.500                                 !triple point temperature [K]
+0.18629d-3                              !pressure at triple point [kPa]
+0.00                                    !density at triple point [mol/L]
+337.80                                  !normal boiling point temperature [K]
+0.                                      !acentric factor	
+512.50          8084.00    8.520104638  !Tc [K], pc [kPa], rhoc [mol/L]  psubst!
+512.50                     8.520104638  !Tc [K], rhoc [mol/L]
+8.31451                                 !gas constant [J/mol-K]
+      18  4      0  0    0 0    2  0     0 0   0 0  !# terms, # coeff/term for:  "normal" terms, critical, association model
+ 0.96352729792779D-01  -0.125   1.000  0	 !a(i),t(i),d(i),l(i)
+-0.10848826325874D+01   1.500   1.000  0
+ 0.29919647090261D-01   0.000   4.000  0
+-0.17963419593895D-02  -0.875   5.000  0
+ 0.47354317752015D-04   1.250   7.000  0
+ 0.10013578850486D+01   0.250   1.000  1
+-0.12555691488591D+01   2.000   1.000  1
+ 0.85469725717500D+00   1.750   3.000  1
+-0.58295570793694D-01   2.500   4.000  1
+ 0.26935675584229D-01   2.375   5.000  1
+ 0.11504892676606D+00   6.875   1.000  2
+-0.51081766133636D-02   5.875   7.000  2
+ 0.19167368789348D-02   5.000   9.000  2
+-0.28618221186953D+00  18.500   2.000  3
+ 0.48168213019845D+00  19.000   3.000  3
+-0.33081091251828D+00  17.500	4.000  3
+ 0.92842083313630D-01  14.000	6.000  3
+-0.35936470747247D-01  12.000	7.000  3
+
+
+#ASO
+ 0.97711883179821     !multiplicative coefficient
+ 0.2044819519D+00     !reduced normalization volume
+ 0.1488528320D-02     !dimensionless volume of interaction
+5.46341463300         !dimensionless association energy
+ 
+ 
+#AUX               !auxiliary model specification
+CP4  ideal gas heat capacity function
+?L. Piazza, R. Span, Int. J. Thermodyn., (2011)
+?\
+!end of info section
+175.50             !lower temperature [K]
+620.00             !upper temperature [K]
+  0.0              !upper pressure [K]
+  0.0              !maximum density [mol/L]
+1.0          8.31451                   !reducing parameters for T, Cp0
+  4  1    0  0    0  0  0              !Nterms:  polynomial, exponential, cosh, sinh
+  4.195042380780400            0.00000
+  2.285796376578240D-03        1.00000
+  1.576122931086030D-06        2.00000
+ -7.711325303733410D-10        3.00000
+  4.701180768961450         1930.29362001473
+
+  
+
+
+--------------------------------------------------------------------------------
+
+@EOS    !---Equation of state---
+FE2     !Helmholtz equation of state for methanol of Sun and Ely (2004).
+          ?
+          ?```````````````````````````````````````````````````````````````````````````````
+          ?Sun, L. and Ely, J.F.,
+          ? "Universal equation of state for engineering application: Algorithm and
+          ? application to non-polar and polar fluids,"
+          ? Fluid Phase Equilib., 222-223:107-118, 2004.
+          ?
+          !```````````````````````````````````````````````````````````````````````````````
+          175.59             !Lower temperature limit [K]
+          620.0              !Upper temperature limit [K]
+          800000.0           !Upper pressure limit [kPa]
+          40.                !Maximum density [mol/L]
+          CPP                                    !Pointer to Cp0 model
+          32.04                                  !Molar mass [g/mol]
+          175.59                                 !Triple point temperature [K]
+          0.1                                    !Pressure at triple point [kPa]
+          40.                                    !Density at triple point [mol/L]
+          300.                                   !Normal boiling point temperature [K]
+          0.566                                  !Acentric factor
+          512.6         8104.0       8.662422    !Tc [K], pc [kPa], rhoc [mol/L]
+          512.6                      8.662422    !Reducing parameters [K, mol/L]
+          8.314472                               !Gas constant [J/mol-K]
+            14  4    0  0    0 0    0 0 0 0 0 0  !# terms and # coefs/term for normal terms, Gaussian terms, and Gao terms
+          -5.24578394      1.5       1.  0.      !a(i),t(i),d(i),l(i)
+           1.39060027      0.25      1.  0.
+           0.856114069     1.25      1.  0.
+          -0.0420843418    0.25      3.  0.
+           3.63682442e-5   0.875     7.  0.
+           0.705598662     1.375     2.  0.
+           0.370573369     0.0       1.  1.
+           2.46303468      2.375     1.  1.
+           1.50253790      2.0       2.  1.
+           0.0747553687    2.125     5.  1.
+          -0.306417876     3.5       1.  2.
+          -0.748402758     6.5       1.  2.
+          -0.101432849     4.75      4.  2.
+           0.0806830693   12.5       2.  3.
+
+
+@EOS    !---Equation of state---
+FE1     !Helmholtz equation of state for methanol of Polt et al. (1992).
+          ?
+          ?```````````````````````````````````````````````````````````````````````````````
+          ?Polt, A., Platzer, B., and Maurer, G.,
+          ? "Parameter der thermischen Zustandsgleichung von Bender fuer 14
+          ? mehratomige reine Stoffe,"
+          ? Chem. Tech. (Leipzig), 44(6):216-224, 1992.
+          ?
+          !```````````````````````````````````````````````````````````````````````````````
+          298.0              !Lower temperature limit [K]
+          703.0              !Upper temperature limit [K]
+          63000.0            !Upper pressure limit [kPa]
+          26.0625            !Maximum density [mol/L]
+          CP1                                    !Pointer to Cp0 model
+          32.0                                   !Molar mass [g/mol]
+          175.61                                 !Triple point temperature [K]
+          16.803                                 !Pressure at triple point [kPa]
+          24.576                                 !Density at triple point [mol/L]
+          337.68                                 !Normal boiling point temperature [K]
+          0.5654                                 !Acentric factor
+          512.58        8103.0       8.5         !Tc [K], pc [kPa], rhoc [mol/L]
+          512.58                     8.5         !Reducing parameters [K, mol/L]
+          8.3143                                 !Gas constant [J/mol-K]
+            22  5    0  0    0 0    0 0 0 0 0 0  !# terms and # coefs/term for normal terms, Gaussian terms, and Gao terms
+          -4.12043979985      3.  0.  0.  0.     !a(i),t(i),d(i),l(i)
+           5.41210456547      4.  0.  0.  0.
+          -0.974639417666     5.  0.  0.  0.
+          -0.909437999343     0.  1.  0.  0.
+          -0.143467597275     1.  1.  0.  0.
+           5.57052459597      2.  1.  0.  0.
+          -6.97445416557      3.  1.  0.  0.
+           0.860535902136     4.  1.  0.  0.
+           2.44117735035      0.  2.  0.  0.
+          -4.49073510921      1.  2.  0.  0.
+           2.23855290012      2.  2.  0.  0.
+          -0.717336537940     0.  3.  0.  0.
+           0.876135006507     1.  3.  0.  0.
+           0.151777405466     0.  4.  0.  0.
+          -0.233178058896     1.  4.  0.  0.
+           0.0140022534721    1.  5.  0.  0.
+           4.12043979985      3.  0.  2.  0.591872
+          -5.41210456547      4.  0.  2.  0.591872
+           0.974639417666     5.  0.  2.  0.591872
+          -0.4642672133       3.  2.  2.  0.591872
+           0.944015617353     4.  2.  2.  0.591872
+          -0.449348200461     5.  2.  2.  0.591872
+
+
+@AUX    !---Auxiliary function for Cp0
+CP1     !Ideal gas heat capacity function for methanol.
+          ?
+          ?```````````````````````````````````````````````````````````````````````````````
+          ?Polt, A., Platzer, B., and Maurer, G.,
+          ?
+          !```````````````````````````````````````````````````````````````````````````````
+          0.                 !
+          10000.             !
+          0.                 !
+          0.                 !
+          1.0     32.0       !Reducing parameters for T, Cp0
+          5 0   0 0   0 0 0  !Nterms:  polynomial, exponential, cosh, sinh
+           0.96422           0.0
+           0.0000532325      1.0
+           0.00000672819     2.0
+          -0.768411e-8       3.0
+           0.27522e-11       4.0
+
+
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+#ETA               !Viscosity model specification
+VS0  pure fluid viscosity model of Xiang et al. (2006).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Xiang, H.W., Laesecke, A., and Huber, M.L. "A New Reference
+? Correlation for the Viscosity of Methanol",
+? J. Phys. Chem. Ref. Data, 35(4):1597-1620, 2006.
+?
+?Estimated uncertainty 0.6% in the dilute gas from room T to 630K, 2% for
+? the liquid at pressures up to 30 MPA between 273 and 343 K,
+? 3% for pressures from 30 MPa to 100 MPa, 5% for the liquid from 100 to 500 MPa,
+? 10% for 500 MPa to 800 MPa.
+?
+!```````````````````````````````````````````````````````````````````````````````
+175.61             !Lower temperature limit [K]
+620.0              !Upper temperature limit [K]
+800000.0           !Upper pressure limit [kPa]
+35.57              !Maximum density [mol/L]
+MEO                !Pointer to hardcoded viscosity model
+0 1 1 0 0 0 0 0    !Number of terms for various pieces
+1.0       1.0           1.0            !Reducing parameters for T, rho, eta
+ 0. 0. 0. 0. 0     !Dilute gas coeffs
+ 0. 0. 0. 0. 0     !Residual coeffs
+NUL                !Pointer to the viscosity critical enhancement auxiliary function (none used)
+
+--------------------------------------------------------------------------------
+
+
+					@ETA   !---Viscosity---
+					VS7    !Pure fluid viscosity model for methanol of Xiang et al. (2006).
+					:DOI: 10.1063/1.2360605
+					?
+					?```````````````````````````````````````````````````````````````````````````````
+					?Xiang, H.W., Laesecke, A., and Huber, M.L.,
+					? "A New Reference Correlation for the Viscosity of Methanol,"
+					? J. Phys. Chem. Ref. Data, 35(4):1597-1620, 2006.
+					?
+					?Estimated uncertainty 0.6% in the dilute gas from room T to 630 K, 2% for
+					? the liquid at pressures up to 30 MPa between 273 and 343 K,
+					? 3% for pressures from 30 MPa to 100 MPa, 5% for the liquid from 100 to 500 MPa,
+					? 10% for 500 MPa to 800 MPa.
+					?
+					!```````````````````````````````````````````````````````````````````````````````
+					175.61             !Lower temperature limit [K]
+					620.0              !Upper temperature limit [K]
+					800000.0           !Upper pressure limit [kPa]
+					35.57              !Maximum density [mol/L]
+					NUL                !Omega model
+					 1.0   577.87         1.  0.  0        !Reducing parameters for eta, T, rho
+					 1.16145    -0.14874  0.  0.  0        !  ai
+					-0.77320         1.   0.  0.  0
+					 0.52487         0.   0.  0.  0
+					-2.43787         1.   0.  0.  0
+					 2.16178         0.   0.  0.  0
+					 0.10225    -0.97346  0.  0.  0
+					-0.34528         1.   0.  0.  0
+					 0.10657         0.   0.  0.  0
+					-2.58055         1.   0.  0.  0
+					-0.44557         0.   0.  0.  0
+					 0.209304408     0.   0.  0.  0
+					 1.3010769266e-6 0.   0.  0.  0
+					 1.e+6           0.   0.  0.  0
+					 1.0   512.6  8.52002486723741  0.  0  !Reducing parameters for eta, T, rho
+					-1.181909        0.   0.  0.  0        !  di
+					 0.5031030      -1.   0.  0.  0
+					-0.6268461      -2.   0.  0.  0
+					 0.5169312      -3.   0.  0.  0
+					-0.2351349      -4.   0.  0.  0
+					 0.053980235    -5.   0.  0.  0
+					-0.0049069617   -6.   0.  0.  0
+					 4.018368        0.   1.  0.  0        !  ei
+					-4.239180        0.   2.  0.  0
+					 2.245110        0.   3.  0.  0
+					-0.5750698       0.   4.  0.  0
+					 0.023021026     0.   5.  0.  0
+					 0.025696775     0.   6.  0.  0
+					-0.0068372749    0.   7.  0.  0
+					 7.2707189e-4    0.   8.  0.  0
+					-2.9255711e-5    0.   9.  0.  0
+					 4.              0.   1.  0.  0
+					 5.              0.   1.  0.  0
+					 1.e+6 577.87 41.9517741858221  0.  0  !Reducing parameters for eta, T, rho
+					 9.990338       -0.5  0.  0.  0        !  ci
+					 18.6222085e-4   3.   2.  0.  0
+					-19.572881       0.   0.  0.  0        !  bi
+					 219.73999      -0.25 0.  0.  0
+					-1015.3226      -0.5  0.  0.  0
+					 2471.01251     -0.75 0.  0.  0
+					-3375.1717      -1.   0.  0.  0
+					 2491.6597      -1.25 0.  0.  0
+					-787.26086      -1.5  0.  0.  0
+					 14.085455      -2.5  0.  0.  0
+					-0.34664158     -5.5  0.  0.  0
+					 1.0             0.   1.  0.  0
+					 0.8             0.   0.  0.  0
+					 0.761           0.   0.  0.  0
+					NUL                !Pointer to the viscosity critical enhancement auxiliary function (none used)
+
+
+
+
+================================================================================
+
+#TCX   !---Thermal conductivity---
+TC1    !Pure fluid thermal conductivity model for methanol of Sykioti et al. (2013).
+:DOI: 10.1063/1.4829449
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Sykioti, E.A., Assael, M.J., Huber, M.L., and Perkins, R.A.,
+? "Reference Correlation of the Thermal Conductivity of Methanol
+? from the Triple Point to 660 K and up to 245 MPa,"
+? J. Phys. Chem. Ref. Data, 42, 043101, 2013.
+?
+?Estimated uncertainty in thermal conductivity is 4.4%
+? except near critical where the uncertainties are larger.
+?
+!```````````````````````````````````````````````````````````````````````````````
+175.61             !Lower temperature limit [K]
+1620.0             !Upper temperature limit [K]
+800000.0           !Upper pressure limit [kPa]
+35.57              !Maximum density [mol/L]
+6   5              !# terms for dilute gas function:  numerator, denominator
+ 512.6       0.001 !Reducing parameters for T, tcx
+-3.57796     0.    !Coefficient, power in T
+ 62.9638     1.
+-37.3047     2.
+-52.1182     3.
+ 231.607     4.
+ 44.1575     5.
+ 3.33313     0.
+-6.08398     1.
+ 8.18739     2.
+-0.261074    3.
+ 1.0         4.
+10  0              !# terms for background gas function:  numerator, denominator
+ 512.6   8.6   1.  !Reducing parameters for T, rho, tcx
+ 0.0556918   0.    1.  0.
+ 0.112174    0.    2.  0.
+-0.0843893   0.    3.  0.
+ 0.0197525   0.    4.  0.
+-0.0015253   0.    5.  0.
+ 0.0104771   1.    1.  0.
+-0.0745272   1.    2.  0.
+ 0.0637569   1.    3.  0.
+-0.0246826   1.    4.  0.
+ 0.00434656  1.    5.  0.
+TK3                !Pointer to critical enhancement auxiliary function
+
+
+#AUX   !---Auxiliary function for the thermal conductivity critical enhancement
+TK3    !Simplified thermal conductivity critical enhancement for methanol of Olchowy and Sengers (1989).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Olchowy, G.A. and Sengers, J.V.,
+? "A Simplified Representation for the Thermal Conductivity of Fluids in the Critical Region,"
+? Int. J. Thermophys., 10:417-426, 1989. doi: 10.1007/BF01133538
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+9 0 0 0            !# terms:  CO2-terms, spare, spare, spare
+1.0  1.0  1.0      !Reducing parameters for T, rho, tcx [mW/(m-K)]
+0.63               !Nu (universal exponent)
+1.239              !Gamma (universal exponent)
+1.03               !R0 (universal amplitude)
+0.063              !Z (universal exponent--not used for t.c., only viscosity)
+1.0                !C (constant in viscosity eqn = 1/[2 - (alpha + gamma)/(2*nu)], but often set to 1)
+0.1487e-9          !Xi0 (amplitude) [m]
+0.05283            !Gam0 (amplitude) [-]
+0.7e-9             !Qd_inverse (modified effective cutoff parameter) [m]; from Kiselev et al. (2005)
+768.9              !Tref (reference temperature)=1.5*Tc [K]
+
+
+
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#STN   !---Surface tension---
+ST1    !Surface tension model for methanol of Mulero et al. (2012).
+:DOI: 10.1063/1.4768782
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Mulero, A., Cachadina, I., and Parra, M.I.,
+? "Recommended Correlations for the Surface Tension of Common Fluids,"
+? J. Phys. Chem. Ref. Data, 41(4), 043105, 2012. doi: 10.1063/1.4768782
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+3                  !Number of terms in surface tension model
+513.38             !Critical temperature used in fit (dummy)
+ 0.22421   1.3355  !Sigma0 and n
+-0.21408   1.677
+ 0.083233  4.4402
+
+
+#MLT   !---Melting line---
+ML1    !Melting line model for methanol of de Reuck and Craven (1993).
+:DOI: 10.1016/j.fluid.2013.03.024
+?
+?```````````````````````````````````````````````````````````````````````````````
+?de Reuck, K.M. and Craven, R.J.B.,
+? "Methanol, International Thermodynamic Tables of the Fluid State-12,"
+? IUPAC, Blackwell Scientific Publications, London, 1993.
+?
+!```````````````````````````````````````````````````````````````````````````````
+175.61             !Lower temperature limit [K]
+620.0              !Upper temperature limit [K]
+0.                 !
+0.                 !
+ 175.61   0.000187 !Reducing temperature and pressure
+1 3 0 0 0 0        !Number of terms in melting line equation
+ 1.0          0.0  !Coefficients and exponents
+ 5320770000.0 1.0
+ 4524780000.0 1.5
+ 3.888861e+10 4.0
+
+
+#PS    !---Vapor pressure---
+PS5    !Vapor pressure equation for methanol of Lemmon (2017).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Functional Form:  P=Pc*EXP[SUM(Ni*Theta^ti)*Tc/T] where Theta=1-T/Tc, Tc and Pc
+? are the reducing parameters below, which are followed by rows containing Ni and ti.
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+513.38    8215.85  !Reducing parameters
+4 0 0 0 0 0        !Number of terms in equation
+-8.7414    1.0
+ 1.5035    1.5
+-2.8720    2.5
+-0.51345   5.0
+
+
+#DL    !---Saturated liquid density---
+DL1    !Saturated liquid density equation for methanol of Lemmon (2010).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Lemmon, C.K. and Lemmon, E.W., 2010.
+?
+?Functional Form:  D=Dc*[1+SUM(Ni*Theta^ti)] where Theta=1-T/Tc, Tc and Dc are
+? the reducing parameters below, which are followed by rows containing Ni and ti.
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+513.38   8.78517   !Reducing parameters
+5 0 0 0 0 0        !Number of terms in equation
+ 0.060230  0.1
+ 18.855    0.65
+-27.626    0.79
+ 11.213    0.95
+ 0.69039   4.4
+
+
+#DV    !---Saturated vapor density---
+DV3    !Saturated vapor density equation for methanol of Lemmon (2017).
+?
+?```````````````````````````````````````````````````````````````````````````````
+?Lemmon, C.K. and Lemmon, E.W., 2017.
+?
+?Functional Form:  D=Dc*EXP[SUM(Ni*Theta^ti)] where Theta=1-T/Tc, Tc and Dc are
+? the reducing parameters below, which are followed by rows containing Ni and ti.
+?
+!```````````````````````````````````````````````````````````````````````````````
+0.                 !
+10000.             !
+0.                 !
+0.                 !
+513.38   8.78517   !Reducing parameters
+8 0 0 0 0 0        !Number of terms in equation
+-3.52208   0.39
+-105.223   1.7
+ 1341.606  2.4
+-2899.24   2.8
+ 8542.128  3.8
+-16947.63  4.4
+ 10717.58  4.8
+-791.782   6.7
+
+
+@END
+c        1         2         3         4         5         6         7         8
+c2345678901234567890123456789012345678901234567890123456789012345678901234567890
+                    0.3626             !Lennard-Jones coefficient sigma [nm] for ECS method
+                    481.8              !Lennard-Jones coefficient epsilon/kappa [K] for ECS method
+

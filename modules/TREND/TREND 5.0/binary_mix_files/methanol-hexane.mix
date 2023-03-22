@@ -1,0 +1,19 @@
+?Methanol/Hexane                                           [MEO/C6]
+?T.M. Blackham and E.W. Lemmon, NIST (2010)
+67-56-1/110-54-3         KWT      1.             0.8780631      1.             0.9683251     11.089885       0.             0. 0. 0. 0. 0. 0.
+                          TC1    -23.61183     -321.95963      709.62412    -2457.6002      3563.0871     -1628.2252         0. 0. 0. 0. 0. 0.
+                          VC1      0.15618146    -2.0009916      7.4455734    -12.629513       9.9525265     -3.0333184      0. 0. 0. 0. 0. 0.
+                          ST1      0.1            0.             0.             0.             0.             0.             0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KWT
+?E.W. Lemmon and R.T Jacobsen
+? "Equations of State for Mixtures of R-32, R-125, R-134a, R-143a, and R-152a,"
+? J. Phys. Chem. Ref. Data, Volume 33, Number 2, pp. 593-620, 2004.
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  4 4      0        0 0      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+ -0.013073    7.4    1.   1.                               !a(i),t(i),d(i),e(i)
+  0.018259    0.35   3.   1.
+  0.81299e-5  10.0   11.  2.
+  0.0078496   5.3    2.   3.

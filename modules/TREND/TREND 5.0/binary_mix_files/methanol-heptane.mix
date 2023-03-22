@@ -1,0 +1,18 @@
+?Methanol/Heptane                                          [MEO/C7]
+?T.M. Blackham and E.W. Lemmon, NIST (2010)
+67-56-1/142-82-5         KWT      1.             0.8586313      1.             1.0533466      9.577000       0.             0. 0. 0. 0. 0. 0.
+                          TC1     50.968727    -415.48487      764.66049    -2981.5212      4313.1173     -1924.3197         0. 0. 0. 0. 0. 0.
+                          VC1      0.43297536    -4.2232872     14.461457     -23.00105       17.41344       -5.1451769      0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KWT
+?E.W. Lemmon and R.T Jacobsen
+? "Equations of State for Mixtures of R-32, R-125, R-134a, R-143a, and R-152a,"
+? J. Phys. Chem. Ref. Data, Volume 33, Number 2, pp. 593-620, 2004.
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  4 4      0        0 0      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+ -0.013073    7.4    1.   1.                               !a(i),t(i),d(i),e(i)
+  0.018259    0.35   3.   1.
+  0.81299e-5  10.0   11.  2.
+  0.0078496   5.3    2.   3.

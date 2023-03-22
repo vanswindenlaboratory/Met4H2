@@ -1,0 +1,20 @@
+?Ammonia/Water                                             [NH3/H2O]
+?#Note:  The TR1 model shows up first below, but the program uses the last set of parameters,
+7664-41-7/7732-18-5         KWF      0.933585       1.015826       1.044759       1.189754       1.             0.             0. 0. 0. 0. 0. 0.
+                          TC1    148.15952     -281.38211     -466.86772     3933.5643     -6208.8526      3352.3341         0. 0. 0. 0. 0. 0.
+                          VC1      0.16069238    -1.3325703      4.6259404     -8.3849305      7.7375498     -2.9196346      0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KWF
+?I.H. Bell, K. Gao, J. Wu, and E.W. Lemmon (2018)
+?Ammonia-Water
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  2 4      0        0 0      5 12     0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+ -2.00211  0.25   1.   2.                                  !a(i),t(i),d(i),eta(i),epsilon(i),beta(i),gamma(i)
+  3.08130  2.0    1.   1.
+ -1.75352  0.5    1.   2. 2.   0.0    -0.27   2.8    0.0   0. 0. 0.
+  2.98160  2.0    1.   2. 2.  -0.746  -0.86   1.8    2.0   0. 0. 0.
+ -3.82588  1.0    1.   2. 2.  -4.25   -3.0    1.5   -0.25  0. 0. 0.
+ -1.73850  4.0    1.   2. 2.  -0.7    -0.5    0.8    1.85  0. 0. 0.
+  0.42008  1.0    3.   2. 2.  -3.0    -4.0    1.3    0.3   0. 0. 0.

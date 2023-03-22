@@ -1,0 +1,29 @@
+?Methane/Benzene                                           [C1/BEN]
+?T.M. Blackham and E.W. Lemmon, NIST (2010)
+74-82-8/71-43-2         KW2      0.982          1.266          1.             1.             0.955          0.             0. 0. 0. 0. 0. 0.
+                          TC4    404.59007     -640.12629     3210.7167     -2760.654          0.             0.             0. 0. 0. 0. 0. 0.
+                          VC4     -0.086290075    0.21756408    -0.20721291    -0.65501277     0.             0.             0. 0. 0. 0. 0. 0.
+                          PR1      0.0363         0.             0.             0.             0.             0.             0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KW2
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?Methane-Propane
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  5 4      0        4 7      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+  0.013746429958576       1.85    3.    0.                 !a(i),t(i),d(i),eta(i),epsilon(i),beta(i),gamma(i)
+ -0.0074425012129552      3.95    3.    0.
+ -0.0045516600213685      0.0     4.    0.
+ -0.0054546603350237      1.85    4.    0.
+  0.0023682016824471      3.85    4.    0.
+  0.18007763721438        5.25    1.    0.25   0.5    0.75   0.5
+ -0.44773942932486        3.85    1.    0.25   0.5    1.0    0.5
+  0.019327374888200       0.2     1.    0.0    0.5    2.0    0.5
+ -0.30632197804624        6.5     2.    0.0    0.5    3.0    0.5

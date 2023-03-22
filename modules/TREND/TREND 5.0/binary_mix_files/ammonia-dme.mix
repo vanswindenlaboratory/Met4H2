@@ -1,0 +1,28 @@
+?Ammonia/Dimethyl ether                                    [NH3/DME]
+?E.W. Lemmon, NIST (2011), estimated from P-x plot of Krauss, D. and Schenk, J., Ammonia+dimethyl ether (R723) as a new refrigerant blend, Schick + Co., Wernerstr. 28, D-70469 Stuttgart, Germany, ILK Institut fuer Luft- und Kaeltetechnik gGmbH, Bertolt-Brecht-Allee 20, D-01309 Dresden, Germany
+7664-41-7/115-10-6         KW3      0.9603         0.9724         0.8083         0.521         -1.206          0.             0. 0. 0. 0. 0. 0.
+                          TC1     58.324178    -104.45798      -66.187862     456.65631     -467.80946      210.41736        0. 0. 0. 0. 0. 0.
+                          VC1     -0.020516649   -0.84231109     2.9327243     -5.5762243      5.4185407     -2.0507226      0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KW3
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?Methane-Nitrogen
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  2 4      0        7 7      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+ -0.0098038985517335      0.0     1.    0.                 !a(i),t(i),d(i),eta(i),epsilon(i),beta(i),gamma(i)
+  0.00042487270143005     1.85    4.    0.
+ -0.034800214576142       7.85    1.    1.0    0.5    1.0    0.5
+ -0.13333813013896        5.4     2.    1.0    0.5    1.0    0.5
+ -0.011993694974627       0.0     2.    0.25   0.5    2.5    0.5
+  0.069243379775168       0.75    2.    0.0    0.5    3.0    0.5
+ -0.31022508148249        2.8     2.    0.0    0.5    3.0    0.5
+  0.24495491753226        4.45    2.    0.0    0.5    3.0    0.5
+  0.22369816716981        4.25    3.    0.0    0.5    3.0    0.5

@@ -1,0 +1,32 @@
+?Isopentane/Water           (C5I/H2O)
+?Kunz and Wagner (2007)
+78-78-4/7732-18-5         KW0    1.          1.          1.          1.          0.        0.
+                          TC1  -22.955      37.763       4.1002      0.          0.          0.
+                          VC1   -0.2912      1.8578     -6.3531      8.7731     -4.4891      0.
+#MXM              !mixture model specification 
+KW0  Kunz and Wagner model for hydrocarbon mixtures
+?LITERATURE REFERENCE\
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?\
+?\
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?\
+!end of info section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used   !descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0      !default values (i.e. ideal-solution)
+ 10  3  0    0  0     0  0               !Nterm, Nxcoef, spare, Nspecterms, Nspeccoefs, spare, spare
+  0.25574776844118d1    1.0    1.        !a(i),t(i),d(i)
+ -0.79846357136353d1    1.55   1.
+  0.47859131465806d1    1.7    1.
+ -0.73265392369587      0.25   2.
+  0.13805471345312d1    1.35   2.
+  0.28349603476365      0.0    3.
+ -0.49087385940425      1.25   3.
+ -0.10291888921447      0.0    4.
+  0.11836314681968      0.7    4.
+  0.55527385721943d-4   5.4    4.

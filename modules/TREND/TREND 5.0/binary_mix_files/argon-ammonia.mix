@@ -1,0 +1,18 @@
+?Argon/Ammonia                                             [AR/NH3]
+?Neumann et al. (2020)
+7440-37-1/7664-41-7         KWA     1.146326        0.998353       0.756526       1.041113       1.             0.             0. 0. 0. 0. 0. 0.
+                          TC5    257.71367      -25.457127       0.             0.             0.             0.             0. 0. 0. 0. 0. 0.
+                          VC5     -0.0086170038  -0.23414391     0.             0.             0.             0.             0. 0. 0. 0. 0. 0.
+                          TRN     -0.52           0.92           0.             0.             0.             0.             0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KWA
+?T. Neumann,
+? Lehrstuhl Fuer Thermodynamik, Ruhr Universitaet, Bochum, Germany, 2020.
+?Argon - Ammonia
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  1 4      0        0 0      2 12     0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+  0.02350785     2.3     3.    1.                          !a(i),t(i),d(i),e(i)
+ -1.913776       1.65    1.    2. 2.  -1.3  -0.6   0.9   0.31    0. 0. 0.
+  1.624062       0.42    1.    2. 2.  -1.5  -0.5   1.5   0.39    0. 0. 0.

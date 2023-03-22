@@ -1,0 +1,21 @@
+?Methane/Water              (C1/H2O)
+?Herrig (2018) / see Herrig (2018) PhD thesis
+74-82-8/7732-18-5         KWW    1.263       0.748       1.176       1.038       1.0000000   0.0000000
+                          TC1    0.          0.          0.          0.          0.          0.
+                          VC1    0.          0.          0.          0.          0.          0.
+#MXM              !mixture model specification
+KWW  Methane/Water
+?LITERATURE REFERENCE\
+?Herrig, S. 2018.
+? Methane/Water
+?
+!end of info section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used   !descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0      !default values (i.e. ideal-solution)
+  6  4  0    0  0     0  0               !Nterm, Nxcoef, spare, Nspecterms, Nspeccoefs, spare, spare
+  0.330000000000D+01   1.1000000000   1.0000000000   0.0000000000 !a(i),t(i),d(i)
+  0.960000000000D+01   0.8000000000   1.0000000000   1.0000000000
+ -0.117000000000D+02   1.0000000000   1.0000000000   1.0000000000
+  0.213000000000D+01   4.0000000000   2.0000000000   1.0000000000
+ -0.530000000000D+00   3.4000000000   4.0000000000   1.0000000000
+ -0.288000000000D+01   0.8000000000   1.0000000000   0.0000000000

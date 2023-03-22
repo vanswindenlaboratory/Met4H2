@@ -1,0 +1,69 @@
+!In this file the binary mixing parameters for SRK fluid comibations are stored
+!The order is as follows: 
+! CAS-NR Fluid1		CAS-NR Fluid 2		kij		lij		!Comments
+124-38-9		74-84-0			0.1336		0		!CO2-Ethane 		Parameter fittet at: T = 216.6 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+124-38-9		74-98-6			0.1329		0		!CO2-Propane		Parameter fittet at: T = 216.6 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+124-38-9		106-97-8		0.1322		0		!CO2-n-Butane 		Parameter fittet at: T = 216.6 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+124-38-9		75-28-5			0.1284		0		!CO2-i-Butane 		Parameter fittet at: T = 216.6 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+124-38-9		109-66-0		0.1316		0		!CO2-n-Pentane 		Parameter fittet at: T = 234.8 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+124-38-9		7439-90-9		0.1300		0		!CO2-i-Pentane 		Parameter fittet at: T = 230.2 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010 
+124-38-9		110-54-3		0.1315		0		!CO2-n-Hexane 		Parameter fittet at: T = 253.8 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010 
+124-38-9		111-65-9		0.1316		0		!CO2-n-Octane 		Parameter fittet at: T = 284.3 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010 
+124-38-9		124-18-5		0.1316		0		!CO2-n-Decane 		Parameter fittet at: T = 284.3 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010 
+124-38-9		108-88-3		0.0961		0		!CO2-Toluene 		Parameter fittet at: T = 295.9 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010 
+124-38-9		71-43-2			0.0910		0		!CO2-Benzene		Parameter fittet at: T = 281.0 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010 
+74-82-8			74-84-0			0.0026		0		!Methane-Ethane 	Parameter fittet at: T = 152.7 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			74-98-6			0.0021		0		!Methane-Propane 	Parameter fittet at: T = 184.9 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			106-97-8		0.0017		0		!Methane-n-Butane 	Parameter fittet at: T = 212.6 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			75-28-5			0.0070		0		!Methane-i-Butane 	Parameter fittet at: T = 203.9 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			109-66-0		0.0032		0		!Methane-n-Pentane 	Parameter fittet at: T = 234.8 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			78-78-4			0.0049		0		!Methane-i-Pentane 	Parameter fittet at: T = 230.2 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			110-54-3		0.0046		0		!Methane-n-Hexane 	Parameter fittet at: T = 253.8 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			111-65-9		0.0073		0		!Methane-n-Octane 	Parameter fittet at: T = 284.3 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			124-18-5		0.0091		0		!Methane-n-Decane 	Parameter fittet at: T = 308.8 K 	Ref: Soave, G.; Gamba, S. Pelligrini, L.A., Fluid Phase Equil. 299, 285-293, 2010
+74-82-8			630-08-0		0.12		0		!Methane-CO		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+74-82-8			7727-37-9		0.02		0		!Methane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+74-82-8			7783-06-4		0.08		0		!Methane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+74-85-1			124-38-9		0.15		0		!Ethylene-CO2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+74-85-1			7783-06-4		0.07		0		!Ethylene-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+74-85-1			7727-37-9		0.04		0		!Ethylene-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+74-84-0			7783-06-4		0.07		0		!Ethane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9	
+74-84-0			7727-37-9		0.06		0		!Ethane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+115-07-1		124-38-9		0.08		0		!Propylene-CO2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+115-07-1		7783-06-4		0.07		0		!Propylene-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+115-07-1		7727-37-9		0.06		0		!Propylene-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+74-98-6			7783-06-4		0.07		0		!Propane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+74-98-6			7727-37-9		0.08		0		!Propane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+75-28-5			7783-06-4		0.06		0		!i-Butane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+75-28-5			7727-37-9		0.08		0		!i-Butane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+106-97-8		7783-06-4		0.06		0		!n-Butane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+106-97-8		7727-37-9		0.08		0		!n-Butane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+7439-90-9		7783-06-4		0.06		0		!i-Pentane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+7439-90-9		7727-37-9		0.08		0		!i-Pentane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+109-66-0		7783-06-4		0.06		0		!n-Pentane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+109-66-0		7727-37-9		0.08		0		!n-Pentane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+110-54-3		7783-06-4		0.05		0		!n-Hexane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+110-54-3		7727-37-9		0.08		0		!n-Hexane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+142-82-5		124-38-9		0.15		0		!n-Heptane-CO2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+142-82-5		7783-06-4		0.04		0		!n-Heptane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+142-82-5		7727-37-9		0.08		0		!n-Heptane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+111-65-9		7783-06-4		0.04		0		!n-Octane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+111-65-9		7727-37-9		0.08		0		!n-Octane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+111-84-2		124-38-9		0.15		0		!n-Nonane-CO2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+111-84-2		7783-06-4		0.03		0		!n-Nonane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+111-84-2		7727-37-9		0.08		0		!n-Nonane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+124-18-5		7783-06-4		0.03		0		!n-Decane-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+124-18-5		7727-37-9		0.08		0		!n-Decane-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+124-38-9		630-08-0		-0.04		0		!CO2-CO			Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+71-43-2			7783-06-4		0.03		0		!Benzene-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+71-43-2			7727-37-9		0.08		0		!Benzene-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+108-88-3		7783-06-4		0.03		0		!Toluene-H2S		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+108-88-3		7727-37-9		0.08		0		!Toluene-N2		Ref:Jana, K.A.: Chemical Process Modelling and Computer Simulation, Raj Press, New Delhi, 2008. ISBN-978-81-203-3196-9
+124-38-9		74-82-8			0.105		0		!CO2-Methane		Ref: Li, H.; Yan, J., Applied Energy 86, 826-836, 2009							
+124-38-9		7782-44-7		0.116		0		!CO2-O2			Ref: Li, H.; Yan, J., Applied Energy 86, 826-836, 2009
+124-38-9		7727-37-9		-0.014		0		!CO2-N2			Ref: Li, H.; Yan, J., Applied Energy 86, 826-836, 2009	
+124-38-9		7440-37-1		0.180		0		!CO2-Ar			Ref: Li, H.; Yan, J., Applied Energy 86, 826-836, 2009
+124-38-9		7446-09-5		0.048		0		!CO2-SO2		Ref: Li, H.; Yan, J., Applied Energy 86, 826-836, 2009
+124-38-9		7783-06-4		0.106		0		!CO2-H2S		Ref: Li, H.; Yan, J., Applied Energy 86, 826-836, 2009
+124-38-9		7732-18-5		0.0737		0		!CO2-water		Ref: Aspen Properties
+@END

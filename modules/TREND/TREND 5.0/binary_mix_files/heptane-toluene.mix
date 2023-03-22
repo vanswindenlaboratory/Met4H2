@@ -1,0 +1,31 @@
+?Heptane/Toluene                                           [C7/TOL]
+?E.W. Lemmon, NIST (2012)
+142-82-5/108-88-3         KW1      0.998329       0.9832346      1.0019167      1.0026789     -0.6281548      0.             0. 0. 0. 0. 0. 0.
+                          TC1     40.228323     -58.066334      99.30064      -76.262624      19.843351      14.980036       0. 0. 0. 0. 0. 0.
+                          VC1      0.0073455575  -0.11376142     0.61687877    -1.6185138      1.9679001     -0.90432976     0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KW1
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?Methane-Ethane
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  2 4      0       10 7      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+ -0.00080926050298746     0.65    3.    0.                 !a(i),t(i),d(i),eta(i),epsilon(i),beta(i),gamma(i)
+ -0.00075381925080059     1.55    4.    0.
+ -0.041618768891219       3.1     1.    1.0    0.5    1.0    0.5
+ -0.23452173681569        5.9     2.    1.0    0.5    1.0    0.5
+  0.14003840584586        7.05    2.    1.0    0.5    1.0    0.5
+  0.063281744807738       3.35    2.    0.875  0.5    1.25   0.5
+ -0.034660425848809       1.2     2.    0.75   0.5    1.5    0.5
+ -0.23918747334251        5.8     2.    0.5    0.5    2.0    0.5
+  0.0019855255066891      2.7     2.    0.0    0.5    3.0    0.5
+  6.1777746171555         0.45    3.    0.0    0.5    3.0    0.5
+ -6.9575358271105         0.55    3.    0.0    0.5    3.0    0.5
+  1.0630185306388         1.95    3.    0.0    0.5    3.0    0.5

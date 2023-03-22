@@ -1,0 +1,29 @@
+?Nitrogen/Ethane            (N2/C2)
+?Kunz and Wagner (2007)
+7727-37-9/74-84-0         KW6    1.007671428 1.098650964 0.978880168 1.042352891 1.        0.
+                          TC1   50.889    1462.4     -9985.5     30538.     -40607.      18772.
+                          VC1    0.0216     -0.6648      2.4915     -5.3845      5.1706     -2.3114
+                          PR1    0.0515      0.          0.          0.          0.        0.
+#MXM              !mixture model specification 
+KW6  Kunz and Wagner model for hydrocarbon mixtures
+?LITERATURE REFERENCE\
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?\
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?\
+?Nitrogen-Ethane
+!end of info section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used   !descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0      !default values (i.e. ideal-solution)
+  3  3  0    3  7     0  0               !Nterm, Nxcoef, spare, Nspecterms, Nspeccoefs, spare, spare
+ -0.47376518126608      0.0    2.        !a(i),t(i),d(i),eta(i),epsilon(i),beta(i),gamma(i)
+  0.48961193461001      0.05   2.
+ -0.57011062090535d-2   0.0    3.
+ -0.19966820041320      3.65   1.   1.     0.5    1.     0.5
+ -0.69411103101723      4.9    2.   1.     0.5    1.     0.5
+  0.69226192739021      4.45   2.   0.875  0.5    1.25   0.5

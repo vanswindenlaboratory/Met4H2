@@ -1,0 +1,25 @@
+?R32/R1234yf                                               [R32/R1234YF]
+?R. Akasaka, FPE, 2013, DOI:10.1016/j.fluid.2013.07.057
+75-10-5/754-12-1         KW4      1.00052        0.948538       0.993346       1.02211       -0.277708       0.             0. 0. 0. 0. 0. 0.
+                          TC1      4.1246157    -66.279199     100.35723     -142.91371      126.74397      -42.404493       0. 0. 0. 0. 0. 0.
+                          VC1      0.10157531    -0.93223961     3.6183152     -7.0365843      6.688079      -2.4884845      0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KW4
+?Kunz, O., Klimeck, R., Wagner, W., Jaeschke, M.
+? The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures.
+? GERG Technical Monograph 15. Fortschr.-Ber. VDI, VDI-Verlag, Duesseldorf, 2007.
+?Kunz, O. and Wagner, W.
+? The GERG-2008 Wide-Range Equation of State for Natural Gases and Other Mixtures:
+? An Expansion of GERG-2004.
+? J. Chem. Eng. Data, 57(11):3032-3091, 2012.
+?Methane-Carbon dioxide
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  3 4      0        3 7      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+ -0.10859387354942        2.6     1.    0.                 !a(i),t(i),d(i),eta(i),epsilon(i),beta(i),gamma(i)
+  0.080228576727389       1.95    2.    0.
+ -0.0093303985115717      0.0     3.    0.
+  0.040989274005848       3.95    1.    1.0    0.5    1.0    0.5
+ -0.24338019772494        7.95    2.    0.5    0.5    2.0    0.5
+  0.23855347281124        8.0     3.    0.0    0.5    3.0    0.5

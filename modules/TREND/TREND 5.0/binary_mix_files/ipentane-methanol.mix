@@ -1,0 +1,18 @@
+?Isopentane/Methanol                                       [C5I/MEO]
+?T.M. Blackham and E.W. Lemmon, NIST (2010)
+78-78-4/67-56-1         KWT      1.             0.8541581      1.             1.2935310     43.215000       0.             0. 0. 0. 0. 0. 0.
+                          TC1   -188.94445     -163.15082     1443.1788     -6207.5756      9274.7896     -4305.943          0. 0. 0. 0. 0. 0.
+                          VC1     -0.015868124    1.14741       -6.6374447     18.14208      -21.756595       9.3085328      0. 0. 0. 0. 0. 0.
+#MXM              !mixture model specification 
+KWT
+?E.W. Lemmon and R.T Jacobsen
+? "Equations of State for Mixtures of R-32, R-125, R-134a, R-143a, and R-152a,"
+? J. Phys. Chem. Ref. Data, Volume 33, Number 2, pp. 593-620, 2004.
+!end of section
+ BetaT    GammaT   BetaV    GammaV    Fij    not used      !Descriptors for binary-specific parameters
+  1.0      1.0      1.0      1.0      0.0      0.0         !Default values (i.e. ideal-solution)
+  4 4      0        0 0      0 0      0 0      0 0         !# terms and # coefs/term for normal terms, Kunz-Wagner terms, and Gaussian terms.  3rd column is not used.
+ -0.013073    7.4    1.   1.                               !a(i),t(i),d(i),e(i)
+  0.018259    0.35   3.   1.
+  0.81299e-5  10.0   11.  2.
+  0.0078496   5.3    2.   3.
