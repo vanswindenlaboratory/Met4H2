@@ -1,13 +1,16 @@
 import time
-import os 
-import importlib.util 
-import sys 
+import os
+import warnings
+import importlib.util
+import sys
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 
-import mcerp as mc 
+import mcerp as mc
+import scipy.stats as ss
 
 from trend import trend
 from streamProcess import streamProcess
@@ -16,108 +19,111 @@ from metering import metering
 from modules.uncertaintyCalculator import uncertaintyCalculator
 
 
-
+import pyforfluids as pff
 from modules.molecule import *
 from modules.AGA8Detail import AGA8Detail
-
+import CoolProp.CoolProp as cp
 
 
 
 class met4H2:
-    """This class has methods that can collect info from streamProcess and
-     metering objects. From there it can do monte carlo draws, and can 
-     compute gas properties by using either the TREND or AGA8Detail 
-     frameworks. The gas calculated gas properties are then stored in 
-     self, and finally energy or energy flow of the stream can be 
-     calculated by using the uncertaintyCalculator object."""
+    """
+    This class has methods that can collect info from streamProcess and
+    metering objects. From there it can do monte carlo draws, and can
+    compute gas properties by using either the TREND or AGA8Detail
+    frameworks. The gas calculated gas properties are then stored in
+    self, and finally energy or energy flow of the stream can be
+    calculated by using the uncertaintyCalculator object.
+    """
 
     def __init__(self):
         self.all_measurement_input = pd.DataFrame()
         self.monte_carlo_draws = {}
         self.gcv_temperature = 25    # Temperature at which to get gross
                                         # calorific value.
-        self.T0 = np.array(15+273.15) 
+        self.T0 = np.array(15+273.15)
         self.P0 = np.array(101325)   # AGA8Detail can only have numpy as input.
-        self.model_Z_noise = 0.001   # Model noise could be added here, or 
+        self.model_Z_noise = 0.001/2   # Model noise could be added here, or
         self.model_Hmol_noise = 0    # defined in settings file. It should be
         self.model_Z0_noise = 0      # given as standard uncertainty.
         self.model_MM_noise = 0
         self.model_DM_noise = 0
         self.model_DM0_noise = 0
         self.component_dictionary = dict(zip(['N2','CO2','C1','C2','C3',
-                                              'n-C4','i-C4','n-C5','i-C5',
-                                              'neo-C5','n-C6','2-Methylpentane',
-                                              '3-Methylpentane','2,2-Dimethylbutane',
-                                              '2,3-Dimethylbutane','n-C7','n-C8',
-                                              'n-C9','n-C10','n-C11','n-C12','n-C13',
-                                              'n-C14','n-C15','Ethylene','Propene',
-                                              '1-Butene','cis-2-Butene',
-                                              'trans-2-Butene','2-Methylpropene',
-                                              '1-Pentene','Propadiene',
-                                              '1,2-Butadiene','1,3-Butadiene',
-                                              'Acetylene','Cyclopentane',
-                                              'Methylcyclopentane',
-                                              'Ethylcyclopentane','Cyclohexane',
-                                              'Methylcyclohexane','Ethylcyclohexane',
-                                              'Benzene','Toluene','Ethylbenzene',
-                                              'o-Xylene','Methanol','Methanetiol',
-                                              'H2','H2O','H2S','NH3','HCN','CO',
-                                              'COS','CS2'],
-                                             [['Nitrogen','nitrogen'],
-                                              ['CO2','co2'],
-                                              ['Methane','methane'],
-                                              ['Ethane','ethane'],
-                                              ['Propane','propane'],
-                                              ['n-Butane','butane'],
-                                              ['Isobutane','isobutan'],
-                                              ['n-Pentane','pentane'],
-                                              ['Isopentane','ipentane'],
-                                              ['Neopentane','neopentn'],
-                                              ['n-Hexane','hexane'],
-                                              ['2-Methylpentane'],
-                                              ['3-Methylpentane'],
-                                              ['2,2-Dimethylbutane'],
-                                              ['2,3-Dimethylbutane'],
-                                              ['n-Heptane'],
-                                              ['n-Octane'],
-                                              ['n-Nonane'],
-                                              ['n-Decane'],
-                                              ['n-Undecane'],
-                                              ['n-Dodecane'],
-                                              ['n-Tridecane'],
-                                              ['n-Tetradecane'],
-                                              ['n-Pentadecane'],
-                                              ['Ethene'],
-                                              ['Propene'],
-                                              ['1-Butene'],
-                                              ['cis-2-Butene'],
-                                              ['trans-2-Butene'],
-                                              ['2-Methylpropene'],
-                                              ['1-Pentene'],
-                                              ['Propadiene'],
-                                              ['1,2-Butadiene'],
-                                              ['1,3-Butadiene'],
-                                              ['Ethyne'],
-                                              ['Cyclopentane'],
-                                              ['Methylcyclopentane'],
-                                              ['Ethylcyclopentane'],
-                                              ['Cyclohexane'],
-                                              ['Methylcyclohexane'],
-                                              ['Ethylcyclohexane'],
-                                              ['Benzene'],
-                                              ['Toluene'],
-                                              ['Ethylbenzene'],
-                                              ['o-Xylene'],
-                                              ['Methanol'],
-                                              ['Methanetiol'],
-                                              ['Hydrogen','hydrogen'],
-                                              ['Water'],
-                                              ['Hydrogen sulfide'],
-                                              ['Ammonia'],
-                                              ['Hydrogen cyanide'],
-                                              ['Carbon monoxide'],
-                                              ['Carbonyl sulfide'],
-                                              ['Carbon disulfide']]))
+                                            'n-C4','i-C4','n-C5','i-C5',
+                                            'neo-C5','n-C6','2-Methylpentane',
+                                            '3-Methylpentane','2,2-Dimethylbutane',
+                                            '2,3-Dimethylbutane','n-C7','n-C8',
+                                            'n-C9','n-C10','n-C11','n-C12','n-C13',
+                                            'n-C14','n-C15','Ethylene','Propene',
+                                            '1-Butene','cis-2-Butene',
+                                            'trans-2-Butene','2-Methylpropene',
+                                            '1-Pentene','Propadiene',
+                                            '1,2-Butadiene','1,3-Butadiene',
+                                            'Acetylene','Cyclopentane',
+                                            'Methylcyclopentane',
+                                            'Ethylcyclopentane','Cyclohexane',
+                                            'Methylcyclohexane','Ethylcyclohexane',
+                                            'Benzene','Toluene','Ethylbenzene',
+                                            'o-Xylene','Methanol','Methanetiol',
+                                            'H2','H2O','H2S','NH3','HCN','CO',
+                                            'COS','CS2','He'],
+                                            [['Nitrogen','nitrogen','nitrogen',28.0134],
+                                            ['CO2','co2','carbon_dioxide',44.0095],
+                                            ['Methane','methane','methane',16.04],
+                                            ['Ethane','ethane','ethane',30.07],
+                                            ['Propane','propane','propane',44.09],
+                                            ['n-Butane','butane','butane',58.12],
+                                            ['Isobutane','isobutan','isobutane',58.12],
+                                            ['n-Pentane','pentane','pentane',72.15],
+                                            ['Isopentane','ipentane','isopentane',72.15],
+                                            ['Neopentane','neopentn','pentane',72.15],
+                                            ['n-Hexane','hexane','hexane',86.17],
+                                            ['2-Methylpentane'],
+                                            ['3-Methylpentane'],
+                                            ['2,2-Dimethylbutane'],
+                                            ['2,3-Dimethylbutane'],
+                                            ['n-Heptane'],
+                                            ['n-Octane'],
+                                            ['n-Nonane'],
+                                            ['n-Decane'],
+                                            ['n-Undecane'],
+                                            ['n-Dodecane'],
+                                            ['n-Tridecane'],
+                                            ['n-Tetradecane'],
+                                            ['n-Pentadecane'],
+                                            ['Ethene'],
+                                            ['Propene'],
+                                            ['1-Butene'],
+                                            ['cis-2-Butene'],
+                                            ['trans-2-Butene'],
+                                            ['2-Methylpropene'],
+                                            ['1-Pentene'],
+                                            ['Propadiene'],
+                                            ['1,2-Butadiene'],
+                                            ['1,3-Butadiene'],
+                                            ['Ethyne'],
+                                            ['Cyclopentane'],
+                                            ['Methylcyclopentane'],
+                                            ['Ethylcyclopentane'],
+                                            ['Cyclohexane'],
+                                            ['Methylcyclohexane'],
+                                            ['Ethylcyclohexane'],
+                                            ['Benzene'],
+                                            ['Toluene'],
+                                            ['Ethylbenzene'],
+                                            ['o-Xylene'],
+                                            ['Methanol'],
+                                            ['Methanetiol'],
+                                            ['Hydrogen','hydrogen','hydrogen',2.016],
+                                            ['Water'],
+                                            ['Hydrogen sulfide'],
+                                            ['Ammonia'],
+                                            ['Hydrogen cyanide'],
+                                            ['Carbon monoxide'],
+                                            ['Carbonyl sulfide'],
+                                            ['Carbon disulfide'],
+                                            ['Helium','helium','helium',4.003]]))
 
     def all_equal(self,iterator):
         """Checking that all items in iterator are identical.
@@ -128,13 +134,13 @@ class met4H2:
         except StopIteration:
             return True
         return all(first == x for x in iterator)
-      
+
     def SI_conversion(
             self,ucalc,data,colnames,labels,update_colname=False):
-        """The SI converter in uncertaintyCalculator only accepts inputs 
+        """The SI converter in uncertaintyCalculator only accepts inputs
         in a specific dictionary format. These dictionaries are created for m4h2
         here, and passed to the uncertaintyCalculator.
-        
+
         Output: data frames with SI-converted measurements or uncertainties.
         Input:  ucalc:      uncertaintyCalculator object
                 data:       data frame containing values to be converted
@@ -150,9 +156,9 @@ class met4H2:
             'm³/s':'(m^3)/(s)','Sm³/s':'(m^3)/(s)',
             'kg/s':'(kg)/(s)','Sm^3/s':'(m^3)/(s)','Sm³':'m^3',
             }
-        
+
         for i in range(len(labels)): initialist.append([])
-        
+
         unit_dictionary = dict(zip(labels,initialist))
         units = []
         for t in range(len(data)):
@@ -170,6 +176,11 @@ class met4H2:
                 if unit in unit_dict.keys():
                     unit = unit_dict[unit]
                 tuple_list = list(zip(data[colnames[i]].tolist(),len(data)*[unit]))
+                if unit == 'C' or unit == '°C':
+                    if 'unc' in colnames[i] and 'limit' not in colnames[i]:
+                        tuple_list = list(zip(
+                            data[colnames[i]].tolist(),
+                            len(data)*['K']))
                 unit_dictionary[labels[i]] = [list(x) for x in tuple_list]
         ucalc.input_dictionary['key'] = unit_dictionary
         ucalc.SI_conversion(input_keys=['key'])
@@ -194,11 +205,11 @@ class met4H2:
         return data
 
     def read_settings_file(
-            self,ucalc, stream, meter, filename, 
+            self,ucalc, stream, meter, filename,
             filepath = None, meter_type = 'USM'):
-        """Reads settings file and stores the information to data frames 
+        """Reads settings file and stores the information to data frames
         stored in the m4h2 object.All units are converted to SI units.
-        
+
         Inputs: ucalc:  uncertaintyCalculator object
                 stream: streamProcess object
                 meter:  metering object
@@ -210,26 +221,31 @@ class met4H2:
         else:
             xls = pd.ExcelFile(os.path.join(filepath,filename))
 
-        # Getting information about the stream, i.e., composition, 
-        # quantity or rate and pressure and temperature at line 
+        # Getting information about the stream, i.e., composition,
+        # quantity or rate and pressure and temperature at line
         # conditions.
         stream.read_composition(xls)
         stream.read_process_data(ucalc,self,xls)
-        
-        # meter.dataframes should be set after stream. 
+
+        # meter.dataframes should be set after stream.
         meter.read_general_info(xls)
-        meter.read_flow_meter_uncertainties(
-            ucalc,stream,self,xls,meter_type,stream.process_data)
-        meter.read_composition_uncertainties(xls,stream)
         meter.read_configuration(xls)
-        
+        meter.read_flow_meter_uncertainties(
+            ucalc,
+            stream,
+            self,
+            xls,
+            stream.process_data,
+            meter_type = meter_type) # meter_type really is optional.
+        meter.read_composition_uncertainties(xls,stream)
+
     def collect_measurement_input(self,stream,meter):
         """Information about stream and meter are saved in their
         respective objects. Given the objects, this function
-        collects this info in a common data frame and saves to 
+        collects this info in a common data frame and saves to
         met4H2.all_measurement_input."""
 
-        # Merge the all_measurement_input and composition frame 
+        # Merge the all_measurement_input and composition frame
         # on DateTime. Fill na with previous entry where needed.
         self.all_measurement_input = stream.process_data.merge(
             meter.transmitter_uncertainties,on='DateTime')
@@ -241,35 +257,222 @@ class met4H2:
             by='DateTime',ignore_index=True).fillna(
             method="ffill").fillna(method="bfill")
 
-       
-        # Check that all coverage factors are 2 and distributions are 
-        # normal. If not raise exception for now, but could add a bit 
-        # in the future.
+        # Check that all coverage factors are decimal numbers
+        # and distributions are normal, rectangular, or
+        # triangular.
+        allowed_distributions = ['normal',
+                                'rectangular',
+                                'triangular']
         for no in range(len(
             self.all_measurement_input.filter(
             regex='distribution').columns)):
+
             a = self.all_measurement_input[
                 self.all_measurement_input.filter(
                 regex='distribution').columns[no]].to_numpy()
-            a = np.array([x.lower() for x in a])
+            a = [x.lower() for x in a]
+            if not all(item in allowed_distributions for item in a):
+                raise Exception('Please make sure that all distributions'
+                                +' are normal, rectangular, or triangular.'
+                                )
 
             b = self.all_measurement_input[
                 self.all_measurement_input.filter(
-                regex='coverage').columns[no]].to_numpy()
-            if not (a[0] == a).all() and a[0].lower() == 'normal':
-                raise Exception('Please make sure that all distributions'
-                                +' are normal.')
-            if not(b[0] == b).all() and (b[0].lower() == 2):
-                raise Exception('Please make sure that all coverage'
-                                +' factors are k=2.') 
-         
+                regex='confidence').columns[no]].to_numpy()
+            colname = self.all_measurement_input.filter(
+                regex='confidence').columns[no]
+            if not b.dtype == float:
+                try:
+                    b = np.array([float(x.strip('%')) / 100.0 for x in b ])
+                    self.all_measurement_input[colname] = b
+                except:
+                    raise Exception('Please make sure that all ',
+                                    'confidence levels are given ',
+                                    'as decimals.')
+            if not b.max() <= 1 and not b.min() >= 0:
+                raise Exception('Confidence level cannot be ',
+                                'less than 0 or greater than 1.')
+
+    def confidences_and_distributions(self,quant_list,df,composition=False):
+        """This function takes a list of quantities and corresponding
+        dataframe. On the basis of the distributions the confidence
+        levels are chosen to facilitate monte carlo sampling of
+        the distribution."""
+
+        divide_by = pd.DataFrame()
+
+        # Create a data frame which tells what to divide by.
+        # Expand table in the future. If distribution is
+        # rectangular or triangular, keep 100% confidence
+        # interval.
+        coverage_factors = pd.DataFrame(
+            [[np.nan,1,1],
+             [3,np.nan,np.nan],
+             [2.58,np.nan,np.nan],
+             [2,np.nan,np.nan],
+             [1.96,np.nan,np.nan],
+             [1.645,np.nan,np.nan],
+             [1,1/np.sqrt(3),1/np.sqrt(6)],
+             [0.99,np.nan,np.nan]],
+             columns=['Normal','Rectangular','Triangular'],
+             index=['100.0','99.73','99.0','95.45','95.0','90.0','68.27','68.0'],
+             )
+
+        # Find the correct coverage factor.
+        if composition == True:
+            coldist = 'composition_unc_distribution'
+            colconf = 'composition_unc_confidence'
+
+        # Loop through quantities.    
+        for par in quant_list:
+            if composition == False:
+                coldist = par+'_distribution'
+                colconf = par+'_confidence'
+            # Loop through rows.
+            for idx, row in df.iterrows():
+                # Get distribution and make room for alternative
+                # spellings.
+                distr = df[coldist][idx]
+                if distr in ['normal','Normal','NORMAL']:
+                    dis = 'Normal'
+                if distr in ['rectangular','Rectangular','RECTANGULAR']:
+                    dis = 'Rectangular'
+                if distr in ['triangular','Triangular','TRIANGULAR']:
+                    dis = 'Triangular'
+                if dis not in ['Normal','Triangular','Rectangular']:
+                    raise Exception('Please make sure that all input',
+                                    'distributions are accepted',
+                                    'distribtutions.')
+
+                # Then divide and update the _confidence columns
+                divide_by = coverage_factors[dis][str(row[colconf]*100)]
+                df.loc[idx,par] = df.loc[idx,par]/divide_by
+                if dis == 'Normal':df.loc[idx,colconf] = 0.6827
+                if dis == 'Rectangular':df.loc[idx,colconf] = 1
+                if dis == 'Triangular':df.loc[idx,colconf] = 1
+        return df
+
+    def get_truncated_gaussian(self,limits,row,n_draws,col_names):
+        """Drawing truncated Gaussian distributions."""
+        # Converting limits to standard
+        # distribution limits.
+
+        a_except = True
+        b_except = True
+        try:
+            a = (limits[0] - row[0]) / row[1]
+        except:
+            a = -6*(row[0]/row[1])
+            a_except = False
+        try:
+            b = (limits[1] - row[0]) / row[1]
+        except:
+            b = 6*(row[0]/row[1])
+            b_except = False
+        # Make draws.
+        if any([a_except,b_except]):
+            generic_draws = ss.truncnorm.rvs(a, b, size=n_draws)
+            new_dist = pd.DataFrame(
+                row[0]+generic_draws*row[1],
+                index=col_names).transpose()
+
+        else:
+            generic_draws = mc.Normal(row[0],row[1])
+            # Extract draws.
+            new_dist = pd.DataFrame(
+            [generic_draws._mcpts],columns=col_names)
+
+        return new_dist
+
+    def get_truncated_uniform(self,limits,row,col_names):
+        """Drawing truncated rectangular distributions."""
+
+        # Using limits to redefine low and high.
+        if limits[0] is not None:
+            if limits[0] > row[0] - row[1]:
+                low = limits[0]
+            else:
+                low = row[0] - row[1]
+        else: low = row[0] - row[1]
+        if limits[1] is not None:
+            if limits[1] < row[0] + row[1]:
+                high = limits[1]
+            else:
+                high = row[0] + row[1]
+        else: high = row[0] + row[1]
+        if low > high:
+            print('Lower distribution limit higher than',
+                'upper distribution limit. Ignoring',
+                'upper limit.')
+            high = row[0] + row[1]
+        # Make draws.
+        generic_draws = mc.Uniform(low,high)
+        # Extract draws.
+        return pd.DataFrame(
+            [generic_draws._mcpts],columns=col_names)
+
+    def dont_get_trunc_triangular(self,limits,row,col_names):
+        """Drawing truncated triangular distributions."""
+
+        # Assuming symmetric distribution.
+        peak = row[0]
+        low = row[0] - row[1]
+        high = row[0] + row[1]
+
+        # Using limits to redefine low and high.
+        if limits[0] is not None:
+            if limits[0] > row[0] - row[1]:
+                raise Exception('Truncated triangular ',
+                                'distributions',
+                                'are not supported.')
+        if limits[1] is not None:
+            if limits[1] < row[0] + row[1]:
+                raise Exception('Truncated triangular ',
+                                'distributions',
+                                'are not supported.')
+
+        # Make draws.
+        generic_draws = mc.Triangular(low,peak,high)
+
+        return pd.DataFrame(
+            [generic_draws._mcpts],columns=col_names)
+
+    def get_pressure_temp_quantity_frame(self):
+        unit = self.all_measurement_input['quantity_unc_unit'].iloc[0]
+        pressure_temp_quantity_frame = self.all_measurement_input[
+            ['quantity_'+unit,
+            'quantity_unc',
+            'quantity_unc_confidence',
+            'quantity_unc_distribution',
+            'quantity_unc_lower_limit',
+            'quantity_unc_upper_limit',
+            'pressure_Pa',
+            'pressure_unc',
+            'pressure_unc_confidence',
+            'pressure_unc_distribution',
+            'pressure_unc_lower_limit',
+            'pressure_unc_upper_limit',
+            'temperature_K',
+            'temperature_unc',
+            'temperature_unc_confidence',
+            'temperature_unc_distribution',
+            'temperature_unc_lower_limit',
+            'temperature_unc_upper_limit',]]
+        pressure_temp_quantity_frame=pressure_temp_quantity_frame.rename(
+            columns={'quantity_'+unit:'quantity',
+                    'pressure_Pa':'pressure',
+                    'temperature_K':'temperature'})
+
+        quant_list = ['quantity_unc','pressure_unc','temperature_unc']
+        return self.confidences_and_distributions(
+            quant_list,pressure_temp_quantity_frame)
+
     def draw_lhs_monte_carlo_samples(
-            self, n_draws=10000,frame=None, 
-            temp_lim=None, pres_lim=None, quant_lim=None): 
-        """Subsets, then operates on met4H2.all_measurement_input to 
-        create monte carlo draws for pressure, temperature, quantity and 
-        composition by default. Compostion is normalized to 1
-        
+            self, n_draws=10000,in_frame=None):
+        """Subsets, then operates on met4H2.all_measurement_input to
+        create monte carlo draws for pressure, temperature, quantity and
+        composition by default. Composition is normalized to 1.
+
         The monte carlo draws are saved in a dictionary which can be
         indexed on parameter name: self.monte_carlo_draws.
 
@@ -278,66 +481,39 @@ class met4H2:
         temperature, quantity and composition, but rather create monte
         carlo samples for the inputted frame. One might want to do this
         to create extra noise for instance.
-        
-        The function stores the results in the object in data frames 
-        contained in a dictionary, where columns are MC draws and 
-        time points are in rows. 
-        
-        temp_lim, pres_lim and quant_lim are optional parameters, 
-        that if set should be lists where the first entry is the lower 
-        acceptable limit of the corresponding parameter, and the second 
+
+        The function stores the results in the object in data frames
+        contained in a dictionary, where columns are MC draws and
+        time points are in rows.
+
+        temp_lim, pres_lim and quant_lim are optional parameters,
+        that if set should be lists where the first entry is the lower
+        acceptable limit of the corresponding parameter, and the second
         entry is the upper acceptable limit."""
 
 
-        # Pressure, temperature and quantity do not need normalizing, 
+        # Pressure, temperature and quantity do not need normalizing,
         # that is why the draws are done in a loop,
-        # on the first iteration, there is no normalizing, on the second 
+        # on the first iteration, there is no normalizing, on the second
         # there is.
 
         # This is the default way to run this function. It will create
-        # monte carlo draws for pressure, temperature, quantity and 
+        # monte carlo draws for pressure, temperature, quantity and
         # composition.
-        if frame is None:
+        pres_lim, temp_lim, quant_lim = self.get_input_quantities_limits()
+
+        if in_frame is None:
             return_out = False
-            # Subsetting the big input frame based on column names.
+            # Sub-setting the big input frame based on column names.
             # Note that these names are set earlier in code, when
             # the input was read, so they are well-defined.
 
             # Because the composition has to be normalized, make
             # two separate frames, one for pressure, temperature and
-            # quantity, and one for composition.    
-            unit = self.all_measurement_input['quantity_unc_unit'].iloc[0]
-            pressure_temp_quantity_frame = self.all_measurement_input[
-                ['quantity_'+unit,
-                'quantity_unc',
-                'quantity_unc_coverage',
-                'quantity_unc_distribution',
-                'pressure_Pa',
-                'pressure_unc',
-                'pressure_unc_coverage',
-                'pressure_unc_distribution',
-                'temperature_K',
-                'temperature_unc',
-                'temperature_unc_coverage',
-                'temperature_unc_distribution']]
-            pressure_temp_quantity_frame=pressure_temp_quantity_frame.rename(
-                columns={'quantity_'+unit:'quantity',
-                         'pressure_Pa':'pressure',
-                         'temperature_K':'temperature'})
-            # Now update uncertainty to standard uncertainty. 
-            # For now do normal distribution, could easily be added to 
-            # in the future.
-            for par in ['quantity_unc','pressure_unc','temperature_unc']:
-                mask = pressure_temp_quantity_frame[
-                    par+'_distribution'].str.startswith('Normal')
-                pressure_temp_quantity_frame.loc[
-                    mask,par] = pressure_temp_quantity_frame[
-                    par]/pressure_temp_quantity_frame[
-                    par+'_coverage']
-                pressure_temp_quantity_frame.loc[
-                    mask,par+'_coverage']  = 1
-                
-            
+            # quantity, and one for composition.
+
+            pressure_temp_quantity_frame = self.get_pressure_temp_quantity_frame()
+
             composition_frame = self.all_measurement_input.filter(
                 regex='^((?!quantity).)*$').filter(
                 regex='^((?!pressure).)*$').filter(
@@ -345,66 +521,205 @@ class met4H2:
                 regex='^((?!ptime).)*$').filter(
                 regex='^((?!composition).)*$').filter(
                 regex='^((?!DateTime).)*$')
-            # Now update uncertainty to standard uncertainty. 
-            # For now do normal distribution, could easily be added to 
-            # in the future.
-            comp_unc = composition_frame.filter(regex='_unc').columns
-            for par in comp_unc: 
-                composition_frame[par][
-                    (self.all_measurement_input[
-                    'composition_unc_distribution'
-                    ] == 'Normal')] = composition_frame[
-                    par]/self.all_measurement_input[
-                    'composition_unc_coverage']
+
+            # Now update uncertainty confidence compatible with MC-draws.
+            comp_unc = list(composition_frame.filter(regex='_unc').columns)
+            composition_frame = pd.concat(
+                [composition_frame,
+                self.all_measurement_input['composition_unc_distribution'],
+                self.all_measurement_input['composition_unc_confidence']],axis = 1)
+
+            composition_frame = self.confidences_and_distributions(
+                comp_unc,composition_frame,
+                composition=True)
+
             frame_list = [pressure_temp_quantity_frame,
-                          composition_frame]
-        
+                        composition_frame]
+
         # If not running the function with default monte carlo
-        # draws for pressure, temperature, quantity and 
+        # draws for pressure, temperature, quantity and
         # composition, but rather providing a self defined frame:
         else:
             # Return results if not running function in default mode.
             return_out = True
-            frame_list = [frame]
+            # If the frame provided does not have columns with
+            # distributions and confidence levels, normal distribution
+            # and standard uncertainties are assumed.
+            if not any([True for i in list(in_frame.columns) if 'confidence'in i]):
+                conf =  pd.DataFrame(
+                    {in_frame.columns[0]+'_unc_confidence':len(in_frame)*[0.6827]})
+                in_frame = pd.concat([in_frame,conf.set_index(in_frame.index)],axis=1)
+            else: raise Exception("Do test of code when removing this exception.")
+            if not any([True for i in list(in_frame.columns) if '_unc_distribution'in i]):
+                conf =  pd.DataFrame(
+                    {in_frame.columns[0]+'_unc_distribution':len(in_frame)*["Normal"]})
+                in_frame = pd.concat(
+                    [in_frame,conf.set_index(in_frame.index)],axis=1)
+            else: raise Exception("Do test of code when removing this exception.")
+            frame_list = [in_frame]
 
         # frame_list will have length 1 or 2, depending in wether
-        # method is run in default mode or not (see above comments).   
+        # method is run in default mode or not (see above comments).
         for i in range(len(frame_list)):
-            # Get the frame. It contains parameters and their 
-            # uncertainties.
+            # Get the frame. It contains parameters, their
+            # standard uncertainties and distribution.
             frame = frame_list[i]
             out_frames = list()
+
+
             # set number of monte carlo draws to be made.
             mc.npts = n_draws
             # The out_frame will have draws in columns, so number them.
             col_names = list(range(1, n_draws + 1))
             col_names = [str(x) for x in col_names]
             parameter_list = [x for x in frame.columns if not 'unc' in x]
-            # A seperate out_frame with monte_carlo draws in columns
+            # A separate out_frame with monte_carlo draws in columns
             # and potential time points in rows will be made for each
             # parameter in frame.
             for parameter in parameter_list:
                 # Extract the parameter and its uncertainty from frame.
-                val = pd.concat(
-                    [frame[parameter],frame[parameter+'_unc']],axis=1)
-                # Create data frame to use for storing the monte carlo 
+                if i == 0:
+                    val = pd.concat(
+                        [frame[parameter],
+                        frame[parameter+'_unc'],
+                        frame[parameter+'_unc_confidence'],
+                        frame[parameter+'_unc_distribution']],axis=1)
+                if i == 1:
+                    val = pd.concat(
+                        [frame[parameter],
+                        frame[parameter+'_unc'],
+                        frame['composition_unc_confidence'],
+                        frame['composition_unc_distribution']],axis=1)
+
+                # Create data frame to use for storing the monte carlo
                 # draws for each parameter (eg., pressure, temp, H2,...).
                 mc_df = pd.DataFrame(columns=col_names)
                 # Create a new draw for each row
+                counter = 0
                 for _, row in val.iterrows():
-                    # make draws
-                    generic_draws = mc.N(0,1) 
-                    # extract draws
-                    dist = generic_draws._mcpts
-                    # redistribute the draws within 
-                    # the uncertainty limits.
-                    new_dist = pd.DataFrame(
-                        row[parameter] 
-                        + (dist - dist.mean())
-                        *(row[parameter+'_unc']/dist.std())).T
-                    new_dist.columns = col_names
+                    # make draws. Standard deviation must be > 0.
+                    # This only introduces uncertainty if it is known
+                    # that there is zero variation in the data, which
+                    # will never happen with real data.
+                    if row[1] == 0: row[1] = 0.00000001
+                    if row[3] == 'Normal':
+                        # Apply the correct truncation limits to the
+                        # distribution.
+                        if i == 0 and in_frame is None:
+                            if (
+                                parameter == 'pressure'):
+                                new_dist = self.get_truncated_gaussian(
+                                    pres_lim[counter],row,n_draws,col_names)
+                            elif (
+                                parameter == 'temperature'):
+                                new_dist = self.get_truncated_gaussian(
+                                    temp_lim[counter],row,n_draws,col_names)
+                            elif parameter not in ['pressure','temperature']:
+                                new_dist = self.get_truncated_gaussian(
+                                    quant_lim[counter],row,n_draws,col_names)
+                            else:
+                                generic_draws = mc.Normal(row[0],row[1])
+                                # Extract draws.
+                                new_dist = pd.DataFrame(
+                                    [generic_draws._mcpts],columns=col_names)
+                        if i == 0 and in_frame is not None:
+                            generic_draws = mc.Normal(row[0],row[1])
+                            # Extract draws.
+                            new_dist = pd.DataFrame(
+                                [generic_draws._mcpts],columns=col_names)
+
+                        if i == 1:
+                            quant_lim = [0,1]
+                            new_dist = self.get_truncated_gaussian(
+                                    quant_lim,row,n_draws,col_names)
+
+                    if row[3] == 'Rectangular':
+                        # Apply the correct truncation limits to the
+                        # distribution.
+                        if i == 0 and in_frame is None:
+                            if (
+                                parameter == 'pressure' and
+                                pres_lim is not None):
+                                new_dist = self.get_truncated_uniform(
+                                    pres_lim[counter],row,col_names)
+                            elif (
+                                parameter == 'temperature' and
+                                not temp_lim == None):
+                                new_dist = self.get_truncated_uniform(
+                                    temp_lim[counter],row,col_names)
+                            elif quant_lim is not None and parameter not in [
+                                'pressure','temperature']:
+                                new_dist = self.get_truncated_uniform(
+                                    quant_lim[counter],row,col_names)
+                            else:
+                                # Symmetric distribution assumed
+                                low = row[0]-row[1]
+                                high = row[0]+row[1]
+                                generic_draws = mc.Uniform(low,high)
+                                # Extract draws.
+                                new_dist = pd.DataFrame(
+                                    [generic_draws._mcpts],columns=col_names)
+                        if i == 0 and in_frame is not None:
+                            # Symmetric distribution assumed
+                            low = row[0]-row[1]
+                            high = row[0]+row[1]
+                            generic_draws = mc.Uniform(low,high)
+                            # Extract draws.
+                            new_dist = pd.DataFrame(
+                                [generic_draws._mcpts],columns=col_names)
+
+                        if i == 1:
+                            quant_lim = [0,1]
+                            new_dist = self.get_truncated_uniform(
+                                    quant_lim,row,col_names)
+
+                    if row[3] == 'Triangular':
+                        # Apply the correct truncation limits to the
+                        # distribution.
+                        if i == 0 and in_frame is None:
+                            if (
+                                parameter == 'pressure' and
+                                pres_lim is not None):
+                                new_dist = self.dont_get_trunc_triangular(
+                                    pres_lim[counter],row,col_names)
+                            elif (
+                                parameter == 'temperature' and
+                                not temp_lim == None):
+                                new_dist = self.dont_get_trunc_triangular(
+                                    temp_lim[counter],row,col_names)
+                            elif quant_lim is not None and parameter not in [
+                                'pressure','temperature']:
+                                new_dist = self.dont_get_trunc_triangular(
+                                    quant_lim[counter],row,col_names)
+                            else:
+                                # Symmetric distribution assumed.
+                                low = row[0]-row[1]
+                                high = row[0]+row[1]
+                                peak = row[0]
+                                generic_draws = mc.Triangular(low,peak,high)
+                                # Extract draws.
+                                new_dist = pd.DataFrame(
+                                    [generic_draws._mcpts],
+                                    columns=col_names)
+                        if i == 0 and in_frame is not None:
+                            # Symmetric distribution assumed.
+                            low = row[0]-row[1]
+                            high = row[0]+row[1]
+                            peak = row[0]
+                            generic_draws = mc.Triangular(low,peak,high)
+                            # Extract draws.
+                            new_dist = pd.DataFrame(
+                                [generic_draws._mcpts],
+                                columns=col_names)
+
+                        if i == 1:
+                            quant_lim = [0,1]
+                            new_dist = self.dont_get_trunc_triangular(
+                                    quant_lim[counter],row,col_names)
+                    counter = counter + 1
                     # Add the monte carlo draw in row to the mc_df.
                     mc_df = pd.concat([mc_df,new_dist],axis=0)
+
                 # reindex and add the data frame for the particular
                 # parameter to the list of out_frames.
                 mc_df.index=list(range(len(val)))
@@ -416,90 +731,76 @@ class met4H2:
             if i == 1:
                 sum_across_frames = sum(out_frames)
                 for no in range(len(out_frames)):
-                    # Set limit between 0 and 1.
-                    out_frames[no][out_frames[no] < 0] = 0
-                    out_frames[no][out_frames[no] > 1] = 1
                     self.monte_carlo_draws[
                         parameter_list[no]] = (
                         out_frames[no]/sum_across_frames)
                     self.monte_carlo_draws[
                         parameter_list[no]] = out_frames[
-                        no].add_prefix(parameter_list[no]+'_') 
-            # If the draws are not for composition, which always
-            # is the case if i=0 (i can maximally be 1), truncate
-            # the draw distribution if limits are set in optional
-            # arguments.
+                        no].add_prefix(parameter_list[no]+'_')
             else:
-                limits = [quant_lim,pres_lim,temp_lim]
                 for no in range(len(out_frames)):
-                    # Set lim between those potentially given 
-                    # with temp_lim, pres_lim and quant_lim
-                    if isinstance(limits[no],list):
-                        out_frames[no][
-                            out_frames[no]<limits[no][0]]=limits[no][0]
-                        out_frames[no][
-                            out_frames[no]>limits[no][1]]=limits[no][1]
-                    # The out_frames for each parameter are added to 
-                    # a dictionary containing the montecarlo draws, 
+                    # The out_frames for each parameter are added to
+                    # a dictionary containing the montecarlo draws,
                     # which can later be indexe on parameter name.
                     self.monte_carlo_draws[
                         parameter_list[no]] = out_frames[no].add_prefix(
-                        parameter_list[no]+'_')             
-        
+                        parameter_list[no]+'_')
+
         # Only return if not running funtion in default mode.
         # In that case out_frames will have length=1.
         if return_out == True:
             return out_frames[0]
-    
+
     def get_pressure(self,nominal,standard,nominal_values=None):
-        """This function retrieves pressure at line conditions 
+        """This function retrieves pressure at line conditions
         from a data frame, and returns them along with pressure
         at reference conditions as defined in __init__.
-        
+
         Inputs: nominal=False or nominal=True:
-                indicates whether one is about to calculate nominal 
-                gas properties or if one is about to calculate gas 
+                indicates whether one is about to calculate nominal
+                gas properties or if one is about to calculate gas
                 properties for a set of monte carlo draws.
 
-                nominal_values:  
+                nominal_values:
                 should be a data frame, containing
                 nominal parameter values if nominal=True
-                
-                standard: 
+
+                standard:
                 indicates which algorithm to use for gas property
-                calculation. The standards require different 
+                calculation. The standards require different
                 pressure units."""
-        
+
         if standard == 'AGA8Detail': divide_by = 1000 # go to kPa
         if standard == 'TREND': divide_by = 1 # keep Pa
+        if standard == 'pyforfluids': divide_by = 1 # keep Pa
         if nominal == True:
             pressure = nominal_values.filter(
-                regex='^pressure')/divide_by 
+                regex='^pressure')/divide_by
             pressure = pressure.rename(
             columns={pressure.columns[0]:'pressure_1'})
         else:
             pressure = self.monte_carlo_draws[
-                'pressure'].iloc[nominal_values.index,:]/divide_by 
+                'pressure'].iloc[nominal_values.index,:]/divide_by
         P0 = self.P0/divide_by
         return np.array(P0), pressure
 
     def get_temperature(self,nominal, nominal_values=None):
-        """This function retrieves temperature at line conditions 
+        """This function retrieves temperature at line conditions
         from a data frame, and returns them along with temperature
         at reference conditions as defined in __init__.
-        
+
         Inputs: nominal=False or nominal=True:
-                indicates whether one is about to calculate nominal 
-                gas properties or if one is about to calculate gas 
+                indicates whether one is about to calculate nominal
+                gas properties or if one is about to calculate gas
                 properties for a set of monte carlo draws.
 
-                nominal_values:  
+                nominal_values:
                 should be a data frame, containing
                 nominal parameter values if nominal=True"""
-        
+
         # If calculating nominal gas properties, get the temperature
         # values straight from the data frame with nominal values.
-        if nominal == True: 
+        if nominal == True:
             temperature = nominal_values.filter(regex='^temperature')
             temperature = temperature.rename(
                 columns={temperature.columns[0]:'temperature_1'})
@@ -510,19 +811,19 @@ class met4H2:
     def get_gross_calorific_value(
             self,nominal,component_names,n_draws=10000):
         """Returns H0_frame, which is a data frame containint gross
-        calorific values (units: J/mol) at reference temperature. 
+        calorific values (units: J/mol) at reference temperature.
         Reference temperature self.gcv_temperature set in __init__.
-        
+
         Inputs: nominal:
                 Boolean, True or False, indicates whether about to
-                calculate nominal gas properties or calculating 
+                calculate nominal gas properties or calculating
                 monte carlo gas properties.
-                
+
                 component_names: list of gas component names
-                
+
                 n_draws: number of monte carlo draws."""
-        
-        # To not have to read extra files the gross calorific value 
+
+        # To not have to read extra files the gross calorific value
         # at different temperatures is hardcoded.
         gcv_df = pd.DataFrame({"Component":[
             'Methane','Ethane','Propane','n-Butane','2-Methylpropane',
@@ -618,59 +919,76 @@ class met4H2:
             0.46,0.67,0.76,0.81,0.87,1.54,1.13,1.21,1.32,1.44,0.21,0.34,
             0.39,0.5,0.47,0.42,0.73,0.6,0.4,0.41,0.32,0.36,0.56,0.71,
             0.32,0.71,0.95,0.27,0.51,0.66,0.76,0.13,0.32,0.02,0.004,0.23,
-            0.18,1.26,0.06,0.24,0.43]}) # This bit are standard uncs.
+            0.18,1.26,0.06,0.24,0.43]}) # This bit are standard uncertaintiess.
 
-        df = gcv_df.set_index("Name").reindex(component_names).fillna(0) 
-    
+        df = gcv_df.set_index("Name").reindex(component_names).fillna(0)
+
         if nominal == False:
             H0_df = df[
                 ["Hcmol_"+str(self.gcv_temperature),"uHcmol"]].rename(
                 columns={
-                "uHcmol":"Hcmol_"+str(self.gcv_temperature)+"_unc"}) 
-            # This is a frame that's a bit different from the others 
-            # frames that can be supplied by the same method. 
+                "uHcmol":"Hcmol_"+str(self.gcv_temperature)+"_unc"})
+            # This is a frame that's a bit different from the others
+            # frames that can be supplied by the same method.
             # It has components, not time along the index.
             H0_frame = self.draw_lhs_monte_carlo_samples(
-                n_draws=n_draws,frame=H0_df) 
+                n_draws=n_draws,in_frame=H0_df)
             H0_frame = H0_frame.rename(
                 index=dict(zip(list(range(
-                len(H0_frame))),component_names))).T 
-        else: 
+                len(H0_frame))),component_names))).T
+        else:
             H0_frame = df[
                 ["Hcmol_"+str(self.gcv_temperature)]].T.set_index(
                 pd.Index([1]))
             H0_frame.columns.name = None
-        
+
         # Multipy by 1000 to get the gross calorific value in J/mol.
         return H0_frame*1000
-    
+
+    def cal_molecular_weight(self,composition):
+        """Reads composition, names of components and number of moles
+        for each component from self. Outputs total molecular weight for
+        the fluid, as well as the molecular weight of one mole of the
+        individual components."""
+
+        # calculate mw and mw_total from composition-dictionary
+        mw=[]
+        prods=[]
+        for comp_name in list(composition):  #.keys()
+            val=cp.PropsSI('molar_mass',comp_name)
+            prod=val*composition[comp_name]
+            mw.append(val)
+            prods.append(prod)
+        mw_total=sum(prods)
+        return mw_total, mw
+
     def call_AGA8Detail(
-            self, T0, P0, temperature, pressure, 
+            self, T0, P0, temperature, pressure,
             component_names, component_values):
         """This function returns a list containing the compressibility
         factor at line conditions (Z), the compressibility factor (Z0)
-        at reference condtitions, total molecular weight (total_mw), 
+        at reference condtitions, total molecular weight (total_mw),
         molar density (DM), molar density at reference conditions(DM0),
-        and gross calorific value (Hmol), in that order. 
-        
+        and gross calorific value (Hmol), in that order.
+
         Inputs: T0:             temperature at reference conditions.
                 P0:             pressure at reference conditions.
                 temperature:    temperature at line conditions.
                 pressure:       pressure at line conditions.
                 component_names:list of component names.
                 component values: numpy array of component values."""
+        start = time.time()
 
         AGA8_detail_order = [
             'NA','C1','N2','CO2','C2','C3','i-C4','n-C4','i-C5','n-C5',
             'n-C6','n-C7','n-C8','n-C9','n-C10','H2','O2','CO','H2O',
-            'H2S','He','Ar'] 
+            'H2S','He','Ar']
 
         draws = component_values.shape[1]
         if draws > 1: nominal = False
         else: nominal = True
 
-        
-        # Initialize data frames prior to calculation. 
+        # Initialize data frames prior to calculation.
         if nominal == False: frame_size = draws+1
         else: frame_size = 2
         frame_list = []
@@ -680,114 +998,114 @@ class met4H2:
             for i in list(range(1, frame_size)):
                 cols.append(out_pars[a]+str(i))
             frame_list.append(pd.DataFrame(
-                index=np.arange(component_values.shape[0]), 
+                index=np.arange(component_values.shape[0]),
                 columns=cols))
-            
+
         # Unpack empty frames.
-        (Z_frame, 
-         Z0_frame, 
-         MM_frame, 
-         DM_frame, 
-         DM0_frame, 
-         Hmol_frame) = frame_list
+        (Z_frame,
+        Z0_frame,
+        MM_frame,
+        DM_frame,
+        DM0_frame,
+        Hmol_frame) = frame_list
 
         # Get gross calorific values.
         H0_frame = self.get_gross_calorific_value(
             nominal,component_names,n_draws=draws)
 
-        
         for t in range(component_values.shape[0]):
             for draw in range(draws):
-        
+
                 # create a data frame (x_array) with the gas composition.
                 stacked_list = [
                     [i] for i in list(component_values[t,draw,:])]
                 x_array = pd.DataFrame(
                     dict(zip(component_names,stacked_list)))
-                    
+
                 # Drop columns that are not contained in AGA8.
                 x_array = x_array[x_array.columns.intersection(
                     AGA8_detail_order)]
-                # Create columns that contain zeros for components 
-                # in AGA which are not in H0_frame. 
+                # Create columns that contain zeros for components
+                # in AGA which are not in H0_frame.
                 for component in AGA8_detail_order:
                     if not component in x_array.columns:
                         x_array[component] = 0
 
-                # Re-order columns in H0_frame so they match the order 
+                # Re-order columns in H0_frame so they match the order
                 # of components in AGA8Detail.
-                x_array = x_array[AGA8_detail_order] 
+                x_array = x_array[AGA8_detail_order]
                 # Then do AGA8Detail calculation
+                # This will not work if the temperature gets too low.
                 Z_frame.iloc[t,draw] = AGA8Detail(
-                    P=np.array(pressure.iloc[t,draw]), 
-                    T = np.array(temperature.iloc[t,draw]), 
+                    P=np.array(pressure.iloc[t,draw]),
+                    T = np.array(temperature.iloc[t,draw]),
                     x=x_array.iloc[0,:].to_numpy()).run().Z
                 Z0_frame.iloc[t,draw] = AGA8Detail(
-                    P = P0, 
-                    T = T0, 
-                    x = x_array.iloc[0,:].to_numpy()).run().Z 
+                    P = P0,
+                    T = T0,
+                    x = x_array.iloc[0,:].to_numpy()).run().Z
                 MM_frame.iloc[t,draw] = AGA8Detail(
-                    P=P0, 
-                    T = T0, 
+                    P = P0,
+                    T = T0,
                     x = x_array.iloc[0,:].to_numpy()).run().MM
                 DM_frame.iloc[t,draw] = AGA8Detail(
-                    P=np.array(pressure.iloc[t,draw]), 
-                    T = np.array(temperature.iloc[t,draw]), 
+                    P = np.array(pressure.iloc[t,draw]),
+                    T = np.array(temperature.iloc[t,draw]),
                     x=x_array.iloc[0,:].to_numpy()).run().D
                 DM0_frame.iloc[t,draw] = AGA8Detail(
-                    P=P0, 
-                    T = T0, 
-                    x = x_array.iloc[0,:].to_numpy()).run().D 
+                    P=P0,
+                    T = T0,
+                    x = x_array.iloc[0,:].to_numpy()).run().D
 
                 # Get the columns that are in both x_array and H0_frame.
                 x_array = x_array[x_array.columns.intersection(
-                    H0_frame.columns)] 
+                    H0_frame.columns)]
                 for component in H0_frame.columns.to_list():
                     if not component in x_array.columns:
                         x_array[component] = 0
-                x_array = x_array[H0_frame.columns.to_list()] 
+                x_array = x_array[H0_frame.columns.to_list()]
 
-                # Get Hmol by multiplying the concentration of each 
-                # component (x_array) by gross calorific value (H0) 
+                # Get Hmol by multiplying the concentration of each
+                # component (x_array) by gross calorific value (H0)
                 # and sum across components.
                 Hmol_frame.iloc[t,draw] = (
                     H0_frame.iloc[draw,:]*x_array).sum(axis = 1)[0]
-        
+
         # Divide by 1000 to get correct units.
-        to_return = (Z_frame, Z0_frame, MM_frame/1000, DM_frame*1000, 
-                     DM0_frame*1000, Hmol_frame)    
+        to_return = (Z_frame, Z0_frame, MM_frame/1000, DM_frame*1000,
+                    DM0_frame*1000, Hmol_frame)
+        print(time.time()-start)
         return to_return
-    
+
     def call_TREND(
-            self,T0, P0, temperature, pressure, 
+            self,T0, P0, temperature, pressure,
             component_names, component_values,
             eqn_of_state=None):
         """This function returns a list containing the compressibility
         factor at line conditions (Z), the compressibility factor (Z0)
-        at reference condtitions, total molecular weight (total_mw), 
+        at reference condtitions, total molecular weight (total_mw),
         molar density (DM), molar density at reference conditions(DM0)
-        in that order, and gross calorific value (Hmol) in that order. 
-        
+        in that order, and gross calorific value (Hmol) in that order.
+
         Inputs: T0:             temperature at reference conditions.
                 P0:             pressure at reference conditions.
                 temperature:    temperature at line conditions.
                 pressure:       pressure at line conditions.
                 component_names:list of component names.
                 component values: numpy array of component values."""
+        start = time.time()
 
         # Get equation of state and match to recquired input digit in
         # the TREND framework.
-        if eqn_of_state == None or eqn_of_state == 'GERG2008': 
+        if eqn_of_state == None or eqn_of_state == 'GERG2008':
             eqn_of_state = 1
             mix_ind = 1
-        elif eqn_of_state == 'AGA8': 
+        elif eqn_of_state == 'AGA8':
             eqn_of_state = 7
             mix_ind = 7
         else: raise Exception(
                 'Please make sure to use a recognized equation of state.')
-        
-        
-             
+
         # Determine wether gas property computation is performed
         # for nominal values, or whether the input is a data frame
         # with monte carlo draws.
@@ -802,41 +1120,36 @@ class met4H2:
         out_pars = ['Z_','Z0_','MM_','DM_','DM0_','Hmol_']
         for a in range(len(out_pars)):
             frame_list.append(pd.DataFrame(
-                index=np.arange(component_values.shape[0]), 
+                index=np.arange(component_values.shape[0]),
                 columns=[out_pars[a]+str(i) for i in list(
                 range(1,frame_size))]))
-        
 
         # Get gross calorific values.
         H0_frame = self.get_gross_calorific_value(
             nominal,component_names,n_draws=n_draws)
-        
+
         # REMOVE LATER - FOR TESTING PURPOSES
         #draws = 1
 
-        # Some of the algorithms that will be used later only read 
+        # Some of the algorithms that will be used later only read
         # the component names in specific formats. Therefore, creating
         # lists of component names.
         coolProp_component_names = [
             self.component_dictionary[i][0] for i in component_names]
         TREND_component_names = [
             self.component_dictionary[i][1] for i in component_names]
-        
-        # For each draw use the tr object to calculate gas properties.
-        for draw in range(n_draws): 
-            component_values_draw = component_values[:,draw,:]
 
-           # REMOVE LATER - FOR TESTING PURPOSES.
-            #component_values_draw = np.vstack(([0.6,0.4], [0.6,0.4], [0.6,0.4]))
-            #TREND_component_names = ['Methane','Ethane']
+        # For each draw use the tr object to calculate gas properties.
+        for draw in range(n_draws):
+            component_values_draw = component_values[:,draw,:]
 
             # Create the fluid input dictionary.
             fluid_input={
                 'input' : 'TP',   # temperature and pressure
                 'calctype' : 'D', # default density molar
-                'fluids' : TREND_component_names, 
-                'moles' : component_values_draw, # molfraction, sum=1 
-                'eos_ind' : len(TREND_component_names)*[eqn_of_state], 
+                'fluids' : TREND_component_names,
+                'moles' : component_values_draw, # molfraction, sum=1
+                'eos_ind' : len(TREND_component_names)*[eqn_of_state],
                 'mix_ind' : mix_ind,
                 'path': self.trend_path,
                 'unit': 'molar', # unit
@@ -851,81 +1164,188 @@ class met4H2:
             press = pressure[pressure.columns[draw]].to_numpy()
             temp = temperature[temperature.columns[draw]].to_numpy()
 
-            # REMOVE LATER - FOR TESTING PURPOSES
-            #press=np.array([101325,10000000,10000000]) #Pa     
-            #temp=np.array([273.15+25,273.15+60,273.15+60]) #K
-            #tr.cp_fluids = ['Methane','Ethane']
-            
             # Calculate properties.
             tr.calc_properties(temp,press)
 
-            # REMOVE LATER - FOR TESTING PURPOSES.
-            #H0_frame = pd.DataFrame(H0_frame.iloc[0,[3,4]]).T
-            #component_values_draw = np.vstack(([0.6,0.4], [0.6,0.4], [0.6,0.4]))
-
-            # Get Hmol by multiplying the concentration of each 
-            # component (component_values) by gross calorific value (H0) 
+            # Get Hmol by multiplying the concentration of each
+            # component (component_values) by gross calorific value (H0)
             # and sum across components.
             for t in range(len(component_values_draw)):
                 frame_list[-1].iloc[t,draw] = (
                     component_values_draw[t,:]*H0_frame.values).sum(
                     axis=1)[0]
 
+
             # Put non-TREND-specific results into return frames.
-            trend_results = [tr.Z,tr.Z0,tr.total_mw,tr.DM,tr.DM0] 
+            trend_results = [tr.Z,tr.Z0,tr.total_mw,tr.DM,tr.DM0]
             for n in range(len(frame_list[:-1])):
                 frame = frame_list[:-1][n]
                 frame[frame.columns[draw]] = trend_results[n]
-
+        print(time.time()-start)
         return frame_list
-    
+
+    def call_pyforfluids(
+            self,T0, P0, temperature, pressure,
+            component_names, component_values):
+        """This function returns a list containing the compressibility
+        factor at line conditions (Z), the compressibility factor (Z0)
+        at reference condtitions, total molecular weight (total_mw),
+        molar density (DM), molar density at reference conditions(DM0)
+        in that order, and gross calorific value (Hmol) in that order.
+
+        Inputs: T0:             temperature at reference conditions.
+                P0:             pressure at reference conditions.
+                temperature:    temperature at line conditions.
+                pressure:       pressure at line conditions.
+                component_names:list of component names.
+                component values: numpy array of component values."""
+
+        start = time.time()
+        # In case going throug non-real points.
+        warnings.filterwarnings(
+            action="ignore",
+            category=RuntimeWarning,
+            module="numpy")
+
+        draws = component_values.shape[1]
+        if draws > 1: nominal = False
+        else: nominal = True
+
+        # Get gross calorific values.
+        H0_frame = self.get_gross_calorific_value(
+            nominal,component_names,n_draws=draws)
+
+        # Get equation of state and match to recquired call to
+        # the model.
+        # Currently there is only one option in pyforfluids.
+        eqn_of_state = 'GERG2008'
+        if eqn_of_state == None or eqn_of_state == 'GERG2008':
+            model = pff.models.GERG2008()
+        else: raise Exception(
+                'Please make sure to use a recognized equation of state.')
+
+        # Some of the algorithms that will be used later only read
+        # the component names in specific formats. Therefore, creating
+        # lists of component names.
+        coolProp_component_names = [
+            self.component_dictionary[i][0] for i in component_names]
+        pyfluids_component_names = [
+            self.component_dictionary[i][2] for i in component_names]
+        molwts = np.array([
+            self.component_dictionary[i][-1] for i in component_names])
+
+        Zl = np.zeros([component_values.shape[0],draws])
+        Z0l = np.zeros([component_values.shape[0],draws])
+        MMl = np.zeros([component_values.shape[0],draws])
+        DMl = np.zeros([component_values.shape[0],draws])
+        DM0l = np.zeros([component_values.shape[0],draws])
+        Hmoll = np.zeros([component_values.shape[0],draws])
+
+
+        for draw in range(draws):
+            component_values_draw = component_values[:,draw,:]
+
+            # Then do calculation for each time point.
+            for t in range(component_values.shape[0]):
+
+                # Make composition dictionary.
+                composition = dict(zip(
+                    pyfluids_component_names,
+                    component_values_draw[t,:]))
+                #cool_prop_composition = dict(zip( # only necessary if using coolprop to compute molwt
+                #    coolProp_component_names,
+                #    component_values_draw[t,:]))
+
+                # The properties will be calculated at the moment of the object definition.
+                fluid = pff.Fluid(
+                    model=model,
+                    composition=composition,
+                    temperature=temperature.iloc[t,draw],
+                    pressure=pressure.iloc[t,draw])
+
+                fluid_standard_cond = pff.Fluid(
+                    model=model,
+                    composition=composition,
+                    temperature=float(T0),
+                    pressure=float(P0))
+
+                # Compute total molecular weight.
+                #total_mw, _ = self.cal_molecular_weight(
+                #    cool_prop_composition)
+                #total_mw = component_values_draw[t,:]
+
+                # Collect the wanted properties.
+                Zl[t,draw] = fluid['compressibility_factor']
+                Z0l[t,draw] = fluid_standard_cond['compressibility_factor']
+                MMl[t,draw] = np.multiply(component_values_draw[t,:],molwts).sum()/1000         # kg/mol
+                DMl[t,draw] = fluid.density*1000 # mol/m3
+                DM0l[t,draw] = fluid_standard_cond.density*1000 # mol/m3
+                Hmoll[t,draw] = (H0_frame.iloc[draw,:]*component_values_draw[t,:]).sum()
+
+        #Collect results in data frame
+        if nominal == False: frame_size = draws+1
+        else: frame_size = 2
+        frame_list = []
+        out_pars = ['Z_','Z0_','MM_','DM_','DM0_','Hmol_']
+        data_fill = [Zl,Z0l,MMl,DMl,DM0l,Hmoll]
+        for a in range(len(out_pars)):
+            frame_list.append(pd.DataFrame(
+                data_fill[a],
+                index=np.arange(component_values.shape[0]),
+                columns=[out_pars[a]+str(i) for i in list(
+                range(1,frame_size))]))
+
+        print(time.time() - start)
+        return frame_list
+
     def compute_gas_properties(
-            self,method='TREND',eqn_of_state=None,nominal=False,):
+            self,method='pyforfluids',eqn_of_state=None,nominal=False,):
         """The main output of this function are compressibility
         factors and calorific values, however, other gas properties,
-        such as densities and molar densitites are also computed. 
+        such as densities and molar densitites are also computed.
 
-        method = 'TREND', or method = 'AGA8Detail', this refers
-        to the algorithm that the function will call to perform the 
+        method = 'pyforfluids', method = 'TREND', or
+        method = 'AGA8Detail':                      this refers
+        to the algorithm that the function will call to perform the
         calculations of gas properties.
 
         If method = 'TREND' one can choose to set eqn_of_state to
-        'AGA8' or 'GERG2008'. If method is not set, it will be 
-        'GERG2008' if method = 'TREND' and 'AGA8' if method ='AGA8Detail'.
-        
-        If nominal=False, gas properties are calculated using 
+        'AGA8' or 'GERG2008'.
+        If method is not set, it will be
+        'GERG2008' if method = 'TREND' or 'pyforfluids'
+        and 'AGA8' if method ='AGA8Detail'.
+
+        If nominal=False, gas properties are calculated using
         monte carlo draws and output is saved to self.main_m4h2_output.
 
         If nominal=True, monte carlo is not used and the output is saved
-        to self.main_nominal_m4h2_output. 
+        to self.main_nominal_m4h2_output.
 
-        Note that if nominal=True computed in the latter case, 
-        uncertainties will not be computed and model uncertainties 
+        Note that if nominal=True computed in the latter case,
+        uncertainties will not be computed and model uncertainties
         will not be added to the nominal values."""
 
-        if method not in ['AGA8Detail','TREND']: 
+        if method not in ['AGA8Detail','TREND','pyforfluids']:
             raise Exception(
                 'Please make sure to apply a supported method for'
-                 +'computing gass properties.')
-        if nominal == False: 
+            +'computing gass properties.')
+        if nominal == False:
             # Extracting the number of monte_carlo_draws that have
             # been performed, 'temperature' is one of the paramters that
             # must have been drawn prior to gas property calculation.
             n_draws = self.monte_carlo_draws['temperature'].shape[1]
-        else: 
+        else:
             n_draws = 1
-        
 
-        # get a data frame with nominal values. 
-        # Column names were defined when saving the input to objects, 
+        # get a data frame with nominal values.
+        # Column names were defined when saving the input to objects,
         # so these are well known.
         nominal_values = self.all_measurement_input.filter(
                 regex='^((?!ptime).)*$').filter(
                 regex='^((?!composition).)*$').filter(
                 regex='^((?!DateTime).)*$').filter(
                 regex='^((?!unc).)*$')
-        
-        
+
         # get gas component names.
         component_names = []
         for comp in nominal_values.columns.to_list():
@@ -933,10 +1353,9 @@ class met4H2:
                 non_comp in comp for non_comp in [
                 'quantity','pressure','temperature']):
                 component_names.append(comp)
-        
 
-        # Find all duplicate rows in nominal values and create a 
-        # dictionary with keys that keep the first index, and values 
+        # Find all duplicate rows in nominal values and create a
+        # dictionary with keys that keep the first index, and values
         # that are lists of duplicate rows. This will improve speed
         # because we reduce number of calculations.
         kept_nominal_values = nominal_values.drop_duplicates(
@@ -948,20 +1367,19 @@ class met4H2:
         duplicates = {}
         for keyno in range(len(keys)):
             duplicates[keys[keyno]] = []
-            for idx in values: 
+            for idx in values:
                 if nominal_values.iloc[idx,:].equals(
                     nominal_values.iloc[keys[keyno],:]):
                     duplicates[keys[keyno]].append(idx)
 
-        
-        # Concatenate data frames to 3D numpy arrays for easy 
+        # Concatenate data frames to 3D numpy arrays for easy
         # collection of desired arrays of the composition.
         composition_frames = []
         for comp in component_names:
-            if nominal == False: 
+            if nominal == False:
                 composition_frames.append(self.monte_carlo_draws[comp])
                 stacked = np.zeros([len(nominal_values),n_draws])
-            else: 
+            else:
                 composition_frames.append(
                     pd.DataFrame(nominal_values[comp]))
                 stacked = np.zeros([len(nominal_values),1])
@@ -977,15 +1395,15 @@ class met4H2:
         P0, pressure = self.get_pressure(
             nominal,method,nominal_values=kept_nominal_values)
         # Get components of composition.
-        if nominal == True: 
+        if nominal == True:
             reshaped = kept_nominal_values[
                 component_names].to_numpy().reshape(
-                (kept_nominal_values[component_names].to_numpy().shape[0], 
-                 kept_nominal_values[component_names].to_numpy().shape[1], 1))
+                (kept_nominal_values[component_names].to_numpy().shape[0],
+                kept_nominal_values[component_names].to_numpy().shape[1], 1))
             component_values = np.moveaxis(reshaped, [2,1], [1,2])
         else: component_values = stacked
 
-        # Calculations typically doesn't work with neopentane in the mix. 
+        # Calculations typically doesn't work with neopentane in the mix.
         # According to ISO 20765-2, neo-pentane can be substituted
         # by n-pentane. The uncertainty will be dominated by n-pentane.
         if 'neo-C5' in component_names:
@@ -997,75 +1415,84 @@ class met4H2:
                 component_values, component_names.index('neo-C5'),axis=2)
             del component_names[component_names.index('neo-C5')]
 
-        # Normalize, as the distribution could have been truncated after
-        # monte carlo draws.
+        # Normalize.
+        normed_comp_values = np.empty([
+            component_values.shape[0],
+            component_values.shape[1],
+            component_values.shape[2]])
         for t in range(component_values.shape[0]):
             for draw in range(component_values.shape[1]):
-                component_values[t,draw,:] = component_values[
+                normed_comp_values[t,draw,:] = component_values[
                     t,draw,:]/component_values[t,draw,:].sum()
-
-        # To check time efficiency of the computation below.
-        start = time.time()
 
         # Perform calculation of gas properties according to
         # chosen standard.
-        if method == 'TREND': 
-            (Z_frame, 
-            Z0_frame, 
-            MM_frame, 
-            DM_frame, 
-            DM0_frame, 
+        if method == 'TREND':
+            (Z_frame,
+            Z0_frame,
+            MM_frame,
+            DM_frame,
+            DM0_frame,
             Hmol_frame) = self.call_TREND(
                 T0, P0, temperature, pressure,
-                component_names, component_values,
+                component_names, normed_comp_values,
                 eqn_of_state=eqn_of_state)
         if method == 'AGA8Detail':
-            (Z_frame, 
-            Z0_frame, 
-            MM_frame, 
-            DM_frame, 
-            DM0_frame, 
+            (Z_frame,
+            Z0_frame,
+            MM_frame,
+            DM_frame,
+            DM0_frame,
             Hmol_frame) = self.call_AGA8Detail(
-                T0, P0, temperature, pressure, 
-                component_names, component_values)
+                T0, P0, temperature, pressure,
+                component_names, normed_comp_values)
+        if method == 'pyforfluids':
+            (Z_frame,
+            Z0_frame,
+            MM_frame,
+            DM_frame,
+            DM0_frame,
+            Hmol_frame) = self.call_pyforfluids(
+                T0, P0, temperature, pressure,
+                component_names, normed_comp_values)
 
-    
-        # outputs common to AGA8Detail and TREND are dealt with here.
+        # outputs common to AGA8Detail, TREND, and pyforfluids
+        # are dealt with here.
 
-        # Add model noise to parameters 
+        # Add model noise to parameters
         # (noise level determined in __init__(self))
         noisy_list = [
-            self.model_Z_noise, 
-            self.model_Z0_noise, 
-            self.model_MM_noise, 
-            self.model_DM_noise, 
+            self.model_Z_noise,
+            self.model_Z0_noise,
+            self.model_MM_noise,
+            self.model_DM_noise,
             self.model_DM0_noise,
             self.model_Hmol_noise]
         frame_list = [
-            Z_frame, 
-            Z0_frame, 
-            MM_frame, 
-            DM_frame, 
-            DM0_frame, 
+            Z_frame,
+            Z0_frame,
+            MM_frame,
+            DM_frame,
+            DM0_frame,
             Hmol_frame]
         for i in range(len(noisy_list)):
-            if nominal == False: 
+            if nominal == False:
                 if noisy_list[i] > 0:
                     noise_unc = []
                     for n in frame_list[i].mean(axis=1).to_list():
                         noise_unc.append(n*noisy_list[i])
                     noise_frame = pd.DataFrame(
                         {'noise':len(frame_list[i])*[0],
-                         'noise_unc':noise_unc})
+                        'noise_unc':noise_unc})
                     noise = self.draw_lhs_monte_carlo_samples(
-                        n_draws=n_draws,frame=noise_frame)
-                else: 
+                        n_draws=n_draws,in_frame=noise_frame)
+                else:
                     noise = pd.DataFrame(
-                        0, 
-                        index=range(len(frame_list[i])), 
+                        0,
+                        index=range(len(frame_list[i])),
                         columns=list(range(1,n_draws+1)))
                     noise = noise.astype('object')
-                # Keep only numbers in column number to be able to 
+                # Keep only numbers in column number to be able to
                 # use the dataframes like we want to below.
                 counter = 0
                 colnums = []
@@ -1073,59 +1500,61 @@ class met4H2:
                     colnums.append(x.split('_')[-1])
                     counter = counter + 1
                 frame_list[i].columns = colnums
-                # Adding noise (it is either made in 
+                # Adding noise (it is either made in
                 # the above if, or else zero.)
                 frame_list[i] = pd.DataFrame(
-                    frame_list[i].values+noise.values) 
+                    frame_list[i].values+noise.values)
             else: frame_list[i].columns = ['0']
         # Unpacking frame list.
         _, _, MM_df, DM_df, DM0_df, Hmol_df = frame_list
 
 
         # Calculate densities and calorific values.
-        D_df=pd.DataFrame(DM_df.values*MM_df.values)   # D = DM*MM      
-                                                       #density kg/m3 
-        D0_df=pd.DataFrame(DM0_df.values*MM_df.values) # D0 = DM0*MM    
-                                                       #density kg/m3
-        Hv_df=pd.DataFrame(Hmol_df.values/(MM_df.values/D0_df.values))  
-                                            # Hv = (Hmol/(MM/D0)) 
+        D_df=pd.DataFrame(DM_df.values*MM_df.values)   # D = DM*MM
+                                                        #density kg/m3
+        D0_df=pd.DataFrame(DM0_df.values*MM_df.values) # D0 = DM0*MM
+                                                        #density kg/m3
+        Hv_df=pd.DataFrame(Hmol_df.values/(MM_df.values/D0_df.values))
+                                            # Hv = (Hmol/(MM/D0))
                                             # calorific value J/m3
         Hm_df=pd.DataFrame(Hmol_df.values/MM_df.values)
                                             # Hm = Hmol/MM
                                             # calorific value J/m3
 
-        # Now fillna according to duplicated input and add prefixes 
-        # to be able to understand what's in the data frames later. 
+        # Now fillna according to duplicated input and add prefixes
+        # to be able to understand what's in the data frames later.
         calculated = frame_list+[D_df,D0_df,Hv_df,Hm_df]
         frame_names = [
-            'Z_','Z0_','MM_','DM_','DM0_','Hg_','D_','D0_','Hv_','Hm_']
-        for n in range(len(frame_names)):
-            df = pd.DataFrame(
-                columns=calculated[n].columns, 
-                index=list(
-                range(
-                max(
-                [max(list(duplicates.keys())),
-                 max(max(duplicates.values()))])+1))).add_prefix(
-                frame_names[n])
-            for keyno in range(len(duplicates)):
-                df.iloc[list(
-                    duplicates.keys())[keyno],:] = calculated[n].iloc[
-                    keyno,:]
-                for idx in list(duplicates.values())[keyno]:
-                    df.iloc[idx,:] = calculated[n].iloc[keyno,:]
-            calculated[n] = df
-
-        # To check time efficiency of calculation above.
-        elapsed_time = (time.time() - start) 
+                'Z_','Z0_','MM_','DM_','DM0_','Hg_','D_','D0_','Hv_','Hm_']
+        if any(list(duplicates.values())):
+            for n in range(len(frame_names)):
+                df = pd.DataFrame(
+                    columns=calculated[n].columns,
+                    index=list(
+                    range(
+                    max(
+                    [max(list(duplicates.keys())),
+                    max(max(duplicates.values()))])+1))).add_prefix(
+                    frame_names[n])
+                for keyno in range(len(duplicates)):
+                    df.iloc[list(
+                        duplicates.keys())[keyno],:] = calculated[n].iloc[
+                        keyno,:]
+                    for idx in list(duplicates.values())[keyno]:
+                        df.iloc[idx,:] = calculated[n].iloc[keyno,:]
+                calculated[n] = df
+        else:
+            for fr in range(len(calculated)):
+                calculated[fr] = calculated[fr].add_prefix(
+                    frame_names[fr])
 
         # Put output in dictionary and save to object.
-        if nominal == False: 
+        if nominal == False:
             self.main_m4h2_output = dict(zip(
                 ['Z','Z0','MM','DM','DM0','Hg','D','D0','Hv','Hm'],
                 calculated))
             return self.main_m4h2_output
-        else: 
+        else:
             self.main_nominal_m4h2_output = dict(zip(
                 ['nominal_Z',
                 'nominal_Z0',
@@ -1139,20 +1568,49 @@ class met4H2:
                 'nominal_Hm'],calculated))
             return self.main_nominal_m4h2_output
 
+    def get_input_quantities_limits(self):
+        press_temp_quant = self.get_pressure_temp_quantity_frame()
+
+        if 'pressure_unc_lower_limit' in press_temp_quant:
+            P_ll = press_temp_quant['pressure_unc_lower_limit'].to_list()
+        else: P_ll = [None]*len(press_temp_quant)
+        if 'temperature_unc_lower_limit' in press_temp_quant:
+            T_ll = press_temp_quant['temperature_unc_lower_limit'].to_list()
+        else: T_ll = [None]*len(press_temp_quant)
+        if 'quantity_unc_lower_limit' in press_temp_quant:
+            quantity_ll = press_temp_quant['quantity_unc_lower_limit'].to_list()
+        else: quantity_ll = [None]*len(press_temp_quant)
+
+        if 'pressure_unc_upper_limit' in press_temp_quant:
+            P_ul = press_temp_quant['pressure_unc_upper_limit'].to_list()
+        else: P_ul = [None]*len(press_temp_quant)
+        if 'temperature_unc_upper_limit' in press_temp_quant:
+            T_ul = press_temp_quant['temperature_unc_upper_limit'].to_list()
+        else: T_ul = [None]*len(press_temp_quant)
+        if 'quantity_unc_upper_limit' in press_temp_quant:
+            quantity_ul = press_temp_quant['quantity_unc_upper_limit'].to_list()
+        else: quantity_ul = [None]*len(press_temp_quant)
+
+        P_l = [[P_ll[i],P_ul[i]] for i in range(len(press_temp_quant))]
+        T_l = [[T_ll[i],T_ul[i]] for i in range(len(press_temp_quant))]
+        quantity_l = [[quantity_ll[i],quantity_ul[i]] for i in range(len(press_temp_quant))]
+
+        return P_l,T_l,quantity_l
+
     def initialize_uncertainty_calculator(
             self,ucalc,gas_properties,
             computation_method='lhs_montecarlo',n_mc_draws=1000):
-        
-        """uncertaintyCalculator has a number of methods that help 
+
+        """uncertaintyCalculator has a number of methods that help
         storing the information it needs to perform the uncertainty
-        calculation to the uncertaintyCalculator object. 
-        
+        calculation to the uncertaintyCalculator object.
+
         This initialize_uncertainty_calculator passes information from
         the met4H2 object to the uncertainty calculator for energy and
         energy flow calculations."""
 
         # Get what sort of flow we have. This will affect
-        # the choice of functional relationship. 
+        # the choice of functional relationship.
         unitstring = self.all_measurement_input.filter(
             regex='^((?!unc).)*$').filter(
             regex='^quantity').columns.str.split('_')[0][-1]
@@ -1165,9 +1623,8 @@ class met4H2:
             'Sm³':'standard_vol','kg':'mass'}
         flowtype = possible_units[unitstring]
 
-                                            
-        if flowtype == 'volume_flow':                                                                                            
-            output_label_and_unit = ['qE|J/s']  
+        if flowtype == 'volume_flow':
+            output_label_and_unit = ['qE|J/s']
             # Define input variables and units for each input variable.
             labels_and_units = [
                 'P0|Pa',
@@ -1177,11 +1634,11 @@ class met4H2:
                 'quantity|m³/s',
                 'Z|-',
                 'Z0|-',
-                'Hv|J/m³'] 
+                'Hv|J/m³']
             # Define functional relationship.
-            functional_relationship = '(P*T0*Z0*Hv*quantity)/(P0*T*Z)'         # Define functional relationship                                                        # Define output variable and corresponding unit
+            functional_relationship = '(P*T0*Z0*Hv*quantity)/(P0*T*Z)'         # Define functional relationship                                                        
         if flowtype == 'standard_vol':
-            output_label_and_unit = ['E|J'] 
+            output_label_and_unit = ['E|J'] # Define output variable and corresponding unit
             labels_and_units = ['P0|Pa',
                                 'T0|K',
                                 'P|Pa',
@@ -1189,19 +1646,35 @@ class met4H2:
                                 'quantity|Sm³',
                                 'Z|-',
                                 'Z0|-',
-                                'Hv|J/m³']     
-            # Need to convert standard volume to volume at line 
+                                'Hv|J/m³']
+            # Need to convert standard volume to volume at line
             # conditions in the functional relationship.
             # Consider if it is better to run calculator twice in this
             # case, since it affects the sensititivy coefficients.
-            fr='(P*T0*Z0*Hv*((P0*T*Z*quantity)/(P*T0*Z0)))/(P0*T*Z)'
-            functional_relationship=fr        
-        if flowtype != 'volume_flow' and flowtype != 'standard_vol':
+            fr='(P*T0*Z0*Hv*quantity)/(P0*T*Z)' # Assuming uncertainty in standard volume is approx
+                                                # the same as in volume flow.
+            functional_relationship=fr
+        if flowtype == 'volume':
+            output_label_and_unit = ['E|J'] # Define output variable and corresponding unit
+            labels_and_units = ['P0|Pa',
+                                'T0|K',
+                                'P|Pa',
+                                'T|K',
+                                'quantity|m³',
+                                'Z|-',
+                                'Z0|-',
+                                'Hv|J/m³']
+            # Need to convert standard volume to volume at line
+            # conditions in the functional relationship.
+            # Consider if it is better to run calculator twice in this
+            # case, since it affects the sensititivy coefficients.
+            fr='(P*T0*Z0*Hv*quantity)/(P0*T*Z)' # Assuming uncertainty in standard volume is approx
+                                                # the same as in volume flow.
+            functional_relationship=fr
+        if flowtype != 'volume_flow' and flowtype != 'standard_vol' and flowtype != 'volume':
             raise Exception('Code isn\'t finished, please use volume'
-                            +' flow as quantity input.')       
+                            +' flow as quantity input.')
 
-                                                     
-        
         # Define values for each input variable and time point
         P0 = [float(self.P0)]*len(self.all_measurement_input)
         T0 = [float(self.T0)]*len(self.all_measurement_input)
@@ -1217,38 +1690,76 @@ class met4H2:
         Z = gas_properties['Z'].mean(axis=1).to_list()
         Z0 = gas_properties['Z0'].mean(axis=1).to_list()
         Hv = gas_properties['Hv'].mean(axis=1).to_list()
-        values = [P0,T0,P,T,quantity,Z,Z0,Hv]      
+        values = [P0,T0,P,T,quantity,Z,Z0,Hv]
 
         # Define timestamps for each time point
         time_stamps = self.all_measurement_input['DateTime']
 
-        # Set input and output quantities and functional relationship in 
-        # uncertaintyCalculator. It is important to define the 
+        # Set input and output quantities and functional relationship in
+        # uncertaintyCalculator. It is important to define the
         # input quantities first.
         ucalc.set_input_quantities(
             labels_and_units,values,time_stamps=time_stamps)
-        ucalc.set_output_labels_and_units(output_label_and_unit) 
-        ucalc.set_functional_relationship(functional_relationship) 
+        ucalc.set_output_labels_and_units(output_label_and_unit)
+        ucalc.set_functional_relationship(functional_relationship)
 
         # Define uncertainty distributions
         P0_u = [0]*len(self.all_measurement_input)
         T0_u = [0]*len(self.all_measurement_input)
-        P_u = self.all_measurement_input['pressure_unc'].to_list()
-        T_u = self.all_measurement_input['temperature_unc'].to_list()
-        quantity_u = self.all_measurement_input['quantity_unc'].to_list()
-        Z_u = gas_properties['Z'].std(axis=1).to_list()
-        Z0_u = gas_properties['Z0'].std(axis=1).to_list()
-        Hv_u = gas_properties['Hv'].std(axis=1).to_list()
-        input_expanded_uncertainties = [
-            P0_u,T0_u,P_u,T_u,quantity_u,Z_u,Z0_u,Hv_u]  
+        P0_c = [0.9973]*len(self.all_measurement_input)
+        T0_c = [0.9973]*len(self.all_measurement_input)
+        P0_d = ['normal']*len(self.all_measurement_input)
+        T0_d = ['normal']*len(self.all_measurement_input)
+        P0_l = [[None,None]]*len(self.all_measurement_input)
+        T0_l = [[None,None]]*len(self.all_measurement_input)
 
-        distributions =  ['normal']*len(labels_and_units)
+        press_temp_quant = self.get_pressure_temp_quantity_frame()
+        P_l,T_l,quantity_l = self.get_input_quantities_limits()
+
+        P_c = press_temp_quant['pressure_unc_confidence'].to_list()
+        T_c = press_temp_quant['temperature_unc_confidence'].to_list()
+        quantity_c = press_temp_quant['quantity_unc_confidence'].to_list()
+
+        P_d = press_temp_quant['pressure_unc_distribution'].to_list()
+        T_d = press_temp_quant['temperature_unc_distribution'].to_list()
+        quantity_d = press_temp_quant['quantity_unc_distribution'].to_list()
+
+        P_u = press_temp_quant['pressure_unc'].to_list()
+        T_u = press_temp_quant['temperature_unc'].to_list()
+        quantity_u = press_temp_quant['quantity_unc'].to_list()
+
+        # The output after monte carlo simulation is assumed to be normal.
+        Z_u = [2*i for i in gas_properties['Z'].std(axis=1).to_list()]
+        Z0_u = [2*i for i in gas_properties['Z0'].std(axis=1).to_list()]
+        Hv_u = [2*i for i in gas_properties['Hv'].std(axis=1).to_list()]
+
+        Z_d = len(Z_u)*['normal']
+        Z0_d = Z_d.copy()
+        Hv_d = Z_d.copy()
+
+        Z_c = len(Z_u)*[0.9545]
+        Z0_c = Z_c.copy()
+        Hv_c = Z_c.copy()
+
+        Z_l = len(Z_u)*[[0,1]]
+        Z0_l = Z_l.copy()
+        Hv_l = len(Z_u)*[[30000000,50000000]]
+
+        input_uncertainties = [
+            P0_u,T0_u,P_u,T_u,quantity_u,Z_u,Z0_u,Hv_u]
+        input_confidences = [
+            P0_c,T0_c,P_c,T_c,quantity_c,Z_c,Z0_c,Hv_c]
+        input_distributions = [
+            P0_d,T0_d,P_d,T_d,quantity_d,Z_d,Z0_d,Hv_d]
+        input_limits = [
+            P0_l,T0_l,P_l,T_l,quantity_l,Z_l,Z0_l,Hv_l]
 
         # Set uncertainty distributions in uncertainty calculator
-        ucalc.set_input_expanded_uncertainties(
-            input_expanded_uncertainties,
-            absolute=True,
-            distributions=distributions)
+        ucalc.set_input_uncertainties(
+            input_uncertainties,
+            distributions=input_distributions,
+            confidences=input_confidences,
+            limits=input_limits)
 
         # Define correlation matrix in uncertainty calculator
         forbidden_correlations=[
@@ -1262,13 +1773,13 @@ class met4H2:
             ['T0','pressure'],['quantity','temperature']]
         P0_frame = pd.DataFrame(
             float(self.P0),
-            index = np.arange(len(self.all_measurement_input)), 
+            index = np.arange(len(self.all_measurement_input)),
             columns=[
             'P0_'+str(i) for i in range(len(gas_properties['Z'].columns))
             ])
         T0_frame = pd.DataFrame(
             float(self.T0),
-            index = np.arange(len(self.all_measurement_input)), 
+            index = np.arange(len(self.all_measurement_input)),
             columns=[
             'T0_'+str(i) for i in range(len(gas_properties['Z'].columns))
             ])
@@ -1280,9 +1791,9 @@ class met4H2:
             self.monte_carlo_draws['quantity'],
             gas_properties['Z'],
             gas_properties['Z0'],
-            gas_properties['Hv']] 
-        (ucalc.input_dictionary['list_correlation_matrix'], 
-         _) = self.make_input_correlation_matrices(
+            gas_properties['Hv']]
+        (ucalc.input_dictionary['list_correlation_matrix'],
+        _) = self.make_input_correlation_matrices(
             frame_list ,forbidden_correlations)
 
         # Set computational method in uncertainty calculator
@@ -1290,20 +1801,20 @@ class met4H2:
             computation_method=computation_method,
             monte_carlo_draws=n_mc_draws)
 
-        # Perform SI conversion and a few other partial calculations 
+        # Perform SI conversion and a few other partial calculations
         # and add these to the object.
-        # It is not necessary to do SI_conversion, as we have already 
+        # It is not necessary to do SI_conversion, as we have already
         # done that when we set the stream and meter objects.
-        ucalc.initialize_calculator(SI_conversion=False)  
-        
+        ucalc.initialize_calculator(SI_conversion=False)
+
     def make_input_correlation_matrices(
             self, frame_list, forbidden_correlations=None):
         """There will be correlations between some of the gas properties,
         since some of them depend on others.
-        
-        This method finds correlaitons empirically, then forces zero 
+
+        This method finds correlaitons empirically, then forces zero
         correlation between properties that should not be correlated.
-        Outputs upper triangular matrix for each time point contained 
+        Outputs upper triangular matrix for each time point contained
         in the data frames in frame_list"""
 
         if forbidden_correlations == None: forbidden_correlations = list()
@@ -1343,86 +1854,126 @@ class met4H2:
                         corr = pd.Series(
                             frame_numpy).astype('float64').corr(
                             pd.Series(new_frame_numpy).astype('float64'))
-                        if np.isnan(corr): 
+                        if np.isnan(corr):
                             corr = 0
                         out_matrix.append(corr)
             out_matrices.append(out_matrix)
         return out_matrices, out_labels
 
-   
-    # Just for QA purposes. Remove later.
     def plotter(self,dict1, dict2):
+        """Just for QA purposes."""
         parameters = list(dict1.keys()) + ['dict_no']
         frame = pd.DataFrame(columns=parameters)
         for parameter in parameters[:-1]:
             frame[parameter] = dict1[parameter].iloc[0,:].to_list() + dict2[parameter].iloc[0,:].to_list()
         frame['dict_no'] = len(dict1[parameter].columns)*[1] + len(dict1[parameter].columns)*[2]
-        # Standardizing 
+        # Standardizing
         for parameter in parameters[:-1]:
             frame[parameter] = (frame[parameter]-frame[parameter].mean())/frame[parameter].std()
         # plotting
         dd=pd.melt(frame,id_vars=['dict_no'],value_vars=parameters[:-1],var_name='gas properties')
         sns.boxplot(x='dict_no',y='value',data=dd,hue='gas properties')
 
-        
+    def test_normality(self, gas_property_dict,filepath):
+        """Testing normality using a shapiro test."""
+        #quantity = self.monte_carlo_draws['quantity'].iloc[-1,:]
+
+        for key in gas_property_dict.keys():
+            dist = gas_property_dict[key].iloc[-1,:]
+            for i in range(len(gas_property_dict[key])):
+                _, p = ss.shapiro(list(gas_property_dict[key].iloc[i,:]))
+                if p > 0.05: continue
+                else:
+                    print("Warning: Gas property ",key,'at time',
+                        str(self.all_measurement_input.iloc[i,0]),
+                        'seems not to have a Gaussian distribution',
+                        'according to the Shapiro-test.')
+
+            # Also make a plot.
+            # tegne på en normalfordeling med mean og std.
+            #fig = sns.histplot(data = list(dist)).get_figure()
+            mu, std = ss.norm.fit(np.array(dist,dtype=float))
+
+            # Plot the histogram.
+            plt.hist(dist, bins=10, density=True, alpha=0.6, color='b')
+
+            # Plot the PDF.
+            xmin, xmax = plt.xlim()
+            x = np.linspace(xmin, xmax, 100)
+            p = ss.norm.pdf(x, mu, std)
+            plt.plot(x,p)
+            plt.title(key)
+            plt.savefig(
+                'figures/gas_property_distributions/'
+                +key)
+            plt.clf()
 
 
 if __name__ == '__main__':
-    
-    
+
+
     meter = metering()
     stream = streamProcess()
     m4h2 = met4H2()
     ucalc = uncertaintyCalculator()
-    
-    m4h2.trend_path = os.path.join(
-        os.getcwd(),'Tools','TREND','TREND 5.0')
-    m4h2.trend_dll_path = os.path.join(
-        m4h2.trend_path,'TREND_x64.dll')
-    filepath = os.getcwd()
-    filename = 'settings_example_20230202.xlsx'
-    n_draws = 100
 
-    # Reading the settings file is one of potentially several 
+    m4h2.trend_path = os.path.join(
+        os.getcwd(),'modules','TREND','TREND 5.0')
+    m4h2.trend_dll_path = os.path.join(
+        m4h2.trend_path,'TREND_x64.dll') # running 64 bit Python
+    filepath = os.getcwd()
+    filename = 'settings_USM_example_with_He_20230705.xlsx'
+    filename = 'settings_USM_example_20230705.xlsx'
+    #filename = 'settings_example_20230616.xlsx'
+    n_draws = 10    # With many draws code will take longer to run
+                    # Keeping it low for testing purposes.
+
+    # Reading the settings file is one of potentially several
     # ways to create node, stream and meter objects.
     m4h2.read_settings_file(
-        ucalc, stream, meter, filename, 
+        ucalc, stream, meter, filename,
         filepath = filepath, meter_type = 'USM')
 
-    # When one is happy with node, info from stream and 
+    # When one is happy with node, info from stream and
     # meter are combined in a big data frame.
     m4h2.collect_measurement_input(stream,meter)
 
-    # Based on the m4hs.all_measurement_input frame, 
+    # Based on the m4h2.all_measurement_input frame,
     # one can get lhs montecarlo draws.
-    m4h2.draw_lhs_monte_carlo_samples(n_draws=n_draws) 
+    m4h2.draw_lhs_monte_carlo_samples(
+        n_draws=n_draws)
 
+    # Decide whether to do nominal calculations with no uncertainties
+    # or not. If using method = 'pyforfluids' or 'TREND',
+    # default eqn of state is 'GERG2008',
+    # but this can be modified to 'AGA8' if using TREND.
+    # If method = 'AGA8Detail' AGA8 eqn of stat is used.
+    pyforfluids_properties = m4h2.compute_gas_properties(
+        method='pyforfluids')
 
-    # Decide whether to do nominal calculations with no uncertainties 
-    # or not. If using TREND, default eqn of state is 'GERG2008', 
-    # but this can be modified to 'AGA8'
-    # These are all the ways one could call compute_gas_properties.
-    AGA8_TREND_properties = m4h2.compute_gas_properties(
-        method='TREND',eqn_of_state='AGA8') 
-    #GERG2008_TREND_properties = m4h2.compute_gas_properties(
-    #    method='TREND',eqn_of_state='GERG2008')
-    AGA8_Detail_properties = m4h2.compute_gas_properties(
-        method='AGA8Detail') 
+    # Test normality.
+    m4h2.test_normality(pyforfluids_properties,filepath)
 
-    #nominal_AGA8_TREND_properties = m4h2.compute_gas_properties(
-    # method='TREND',eqn_of_state='AGA8',nominal=True) 
-    #nominal_GERG2008_TREND_properties = m4h2.compute_gas_properties(
-    # method='TREND',eqn_of_state='GERG2008',nominal=True)
-    #nominal_AGA8_Detail_properties = m4h2.compute_gas_properties(
-    # method='AGA8Detail',nominal=True) 
-    
-    #m4h2.plotter(AGA8_TREND_properties, AGA8_Detail_properties)
-
+    # The uncertainty calculator accepts a dictionary
+    # as input. Create that dictionary with initialize
+    # uncertainty calculator. comutation method could
+    # also be set to 'analytical'
     m4h2.initialize_uncertainty_calculator(
-        ucalc,AGA8_TREND_properties,
-        computation_method='analytical',
-        n_mc_draws=1000) 
-    
+        ucalc,
+        pyforfluids_properties,
+        computation_method='lhs_montecarlo',
+        n_mc_draws=1000)
+
     ucalc.perform_uncertainty_analysis()
+
+    # A few ways to plot the output. Make sure to
+    # use a suitable file path.
+    plot1 = ucalc.plot_with_temporal_correlations(
+        r_vector = [0,0.5,1],
+        plot_type = 'absolute',
+        filepath=filepath+'\\figures\\uncertainty_in_time')
+    plot2 = ucalc.plot_without_temporal_correlations(filepath+'\\figures\\uncertainty_in_time')
+    plot3 = ucalc.plot_simple_bar_budget(filepath+'\\figures\\uncertainty_budget')
+
+    # In case one wishes to view the results in excel.
     ucalc.output_to_excel(os.getcwd(),'tester.xlsx')
- 

@@ -29,7 +29,7 @@ class metering:
         warnings.resetwarnings()
 
     def read_flow_meter_uncertainties(
-            self,ucalc,stream,m4h2,xls,meter_type,stream_nominal_values):
+            self,ucalc,stream,m4h2,xls,stream_nominal_values,meter_type=None):
         """This method reads the measurement uncertainty of the flow meter.
         The method also reads the associated uncertainties of the 
         temperature and pressure transmitters that are assumed connected 
@@ -42,7 +42,7 @@ class metering:
         The meter information is saved to the metering object in 
         self.transmitter_uncertainties.
         
-        Inputs: ucalc:  uncertaintyCalculator object
+        Inputs: ucalc:                  uncertaintyCalculator object
                 stream:                 stream object
                 m4h2:                   m4h2 object
                 xls:                    excel object
@@ -52,9 +52,12 @@ class metering:
                                         """
             
 
-        # It is discussable whether we need meter_type as input, as this
-        # could  be read from self.configuration. But this should be part 
-        # of a more comprehensive discussion about the settings file.
+        if meter_type == None:
+            try:
+                meter_type = self.configuration['Setting'][
+                    self.configuration['Configuration']=='Quality_meter'][0]
+            except: raise Exception('Please specify meter type when calling.',
+                                    'read_settings_file()')
 
 
         # Reading uncertainties from file. 
@@ -69,14 +72,16 @@ class metering:
         # Get square sum of meter uncertainty contributions that are 
         # not NaN.
         # Is string too 'magic'? Add that to discussion on input file.
+        # if meter_type == 'USM':
         unc_meter = unc_meter_info[unc_meter_info['Uncertainty'].notnull()]
         unc_info_meter = [
             np.sqrt(sum(np.square(unc_meter['Uncertainty'].to_numpy())))]
         
+        
         # Check that the meter input uncertainty units are consistent.
         # Are strings too 'magic'? Add that to discussion on input file.
-        col = ['Unit','k','Distribution']
-        for_error_message = ['units','coverage factors','distributions']
+        col = ['Unit','Confidence interval','Distribution']
+        for_error_message = ['units','confidence interval','distributions']
         counter = 0
         for c in col:
             if m4h2.all_equal(unc_meter[c].tolist()) == True:
@@ -84,9 +89,18 @@ class metering:
             else: raise Exception(
                     'Please make sure that all '+meter_type+' input '
                     + for_error_message[counter]
-                    + ' have identical units.')
+                    + ' have the units, confidence intervals,'
+                    + ' and distributions.')
             counter = counter + 1
-
+        unc_info_meter.append(unc_meter_info['Input value']
+                              [unc_meter_info['Input variable'] == 'Low_limit'].values[0])
+        unc_info_meter.append(unc_meter_info['Input value']
+                              [unc_meter_info['Input variable'] == 'High_limit'].values[0])
+        unc_info_meter.append(unc_meter_info['Unit']
+                              [unc_meter_info['Input variable'] == 'Low_limit'].values[0].split('_')[1])
+        unc_info_meter.append(unc_meter_info['Unit']
+                              [unc_meter_info['Input variable'] == 'High_limit'].values[0].split('_')[1])
+        
 
         # Add flow meter, P and T, and composition uncertainties 
         # to a common data frame. 
@@ -100,23 +114,41 @@ class metering:
             [unc_pressure["Input variable"] == "Misc"].values[0],
             unc_pressure['Unit']
             [unc_pressure["Input variable"] == "Misc"].values[0],
-            unc_pressure['k']
+            unc_pressure['Confidence interval']
             [unc_pressure["Input variable"] == "Misc"].values[0],
             unc_pressure['Distribution']
-            [unc_pressure["Input variable"] == "Misc"].values[0]]
+            [unc_pressure["Input variable"] == "Misc"].values[0],
+            unc_pressure['Input value']
+            [unc_pressure['Input variable'] == 'Low_limit'].values[0],
+            unc_pressure['Input value']
+            [unc_pressure['Input variable'] == 'High_limit'].values[0],
+            unc_pressure['Unit']
+            [unc_pressure['Input variable'] == 'Low_limit'].values[0],
+            unc_pressure['Unit']
+            [unc_pressure['Input variable'] == 'High_limit'].values[0]]
         unc_info_T = [
             unc_temperature['Uncertainty']
             [unc_temperature["Input variable"] == "Misc"].values[0],
             unc_temperature['Unit']
             [unc_temperature["Input variable"] == "Misc"].values[0],
-            unc_temperature['k']
+            unc_temperature['Confidence interval']
             [unc_temperature["Input variable"] == "Misc"].values[0],
             unc_temperature['Distribution']
-            [unc_temperature["Input variable"] == "Misc"].values[0]]
+            [unc_temperature["Input variable"] == "Misc"].values[0],
+            unc_temperature['Input value']
+            [unc_temperature['Input variable'] == 'Low_limit'].values[0],
+            unc_temperature['Input value']
+            [unc_temperature['Input variable'] == 'High_limit'].values[0],
+            unc_temperature['Unit']
+            [unc_temperature['Input variable'] == 'Low_limit'].values[0],
+            unc_temperature['Unit']
+            [unc_temperature['Input variable'] == 'High_limit'].values[0]]
         unc_info = unc_info_meter + unc_info_P + unc_info_T
         colnames = []
         for m in ['quantity_','pressure_','temperature_']:
-            for n in ['','_unit','_coverage','_distribution']:
+            for n in ['','_unit','_confidence','_distribution',
+                      '_lower_limit','_upper_limit',
+                      '_lower_limit_unit','_upper_limit_unit']:
                 colnames.append(m+'unc'+n)
         data = pd.DataFrame([unc_info],columns=colnames)
            
@@ -140,9 +172,17 @@ class metering:
                     nominal_uncertainty.columns[0].split('_')[-1]]*len(data)
         data = data.ffill()
         
+        lower_limits = ['quantity_unc_lower_limit','pressure_unc_lower_limit','temperature_unc_lower_limit']
+        upper_limits = ['quantity_unc_upper_limit','pressure_unc_upper_limit','temperature_unc_upper_limit']
         # Do SI conversion of absolute uncertainties.     
         self.transmitter_uncertainties = m4h2.SI_conversion(
             ucalc,data,uncertainties,labels)
+        self.transmitter_uncertainties = m4h2.SI_conversion(
+            ucalc,data,lower_limits,labels)
+        self.transmitter_uncertainties = m4h2.SI_conversion(
+            ucalc,data,upper_limits,labels)
+        a = 0
+        
     
     def calc_composition_uncertainties(self,method='GC'): #### Very tentative.
         """To be defined. method could be 'GC' or 'lab_sample'.
@@ -170,7 +210,7 @@ class metering:
             columns=['DateTime','composition_unit']).columns.tolist()]
         colnames = [
             'composition_unc_unit',
-            'composition_unc_coverage',
+            'composition_unc_confidence',
             'composition_unc_distribution'] + comp_col_names
         
         # Create composition uncertainty data frame and fill columns.
@@ -233,11 +273,11 @@ class metering:
             unc_composition['Comp']=='Distribution'].values[0]
         composition_uncertainties[
             'composition_unc_distribution'] = [distribution]
-        # Get coverage factor
-        coverage = unc_composition['H2_unc'][
-            unc_composition['Comp']=='k'].values[0]
+        # Get confidence interval
+        confidence = unc_composition['H2_unc'][
+            unc_composition['Comp']=='Confidence interval'].values[0]
         composition_uncertainties[
-            'composition_unc_coverage'] = [coverage]
+            'composition_unc_confidence'] = [confidence]
         # Add DateTime and unit
         composition_uncertainties[
             'composition_unc_unit'] = ['mol_mol-1']

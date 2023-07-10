@@ -2,25 +2,22 @@ import numpy as np
 
 import CoolProp.CoolProp as cp
 
-import os 
-import importlib.util 
-import sys 
+import os
+import importlib.util
+import sys
 
 for dirpath, dirnames, filenames in os.walk("."):
     for filename in [f for f in filenames if f.endswith("fluid.py")]:
         relative_path = os.path.join(dirpath, filename)
 
-module_name = 'fluid' 
-file_path = os.path.join(os.getcwd(),relative_path) 
-spec = importlib.util.spec_from_file_location(module_name, file_path) 
-module = importlib.util.module_from_spec(spec) 
-sys.modules[module_name] = module 
+module_name = 'fluid'
+file_path = os.path.join(os.getcwd(),relative_path)
+spec = importlib.util.spec_from_file_location(module_name, file_path)
+module = importlib.util.module_from_spec(spec)
+sys.modules[module_name] = module
 spec.loader.exec_module(module)
 
 from fluid import fluid
-
-
-
 
 
 class trend:
@@ -85,29 +82,28 @@ class trend:
         gas_property=[]
 
         # Updating the gas property to be calculated in fluid_input,
-        # and creating a copy, because the composition could change with 
+        # and creating a copy, because the composition could change with
         # time.
         self.fluid_input['calctype']=calc_property
         self.fluid_copy = self.fluid_input.copy()
 
         comp_len =len(self.composition)
-        for counter in range(comp_len): 
+        for counter in range(comp_len):
             # Updating composition.
             self.fluid_copy['moles']=self.composition[counter]
             # Creating the fluid object.
             self.fld=self.make_fluid(self.fluid_copy)
-            # The length of temperature and composition will match if we 
-            # are at line conditions. But at reference conditions 
+            # The length of temperature and composition will match if we
+            # are at line conditions. But at reference conditions
             # temperature and pressure have length of 1.
             if len(temperature)==comp_len:
                 val,_ = self.fld.TREND_EOS(
                     temperature[counter],pressure[counter])
-            else: 
+            else:
                 val,_ = self.fld.TREND_EOS(temperature[0],pressure[0])
             gas_property.append(val)
         return gas_property
-    
-  
+
     def cal_molecular_weight(self):
         """Reads composition, names of components and number of moles 
         for each component from self. Outputs total molecular weight for 
@@ -154,14 +150,13 @@ class trend:
         self.DM0=self.calc_EOS('D',T0,P0)              # unit: mol/m3
         self.Z=self.calc_EOS('Z',temperature,pressure) # unit: -
         self.Z0=self.calc_EOS('Z',T0,P0)               # unit: -
-        self.dielectric_constant=self.calc_EOS('DE',temperature,pressure)
+        #self.dielectric_constant=self.calc_EOS('DE',temperature,pressure)
                                                        # unit: -
         
-        self.total_mw, self.mw = self.cal_molecular_weight() 
-                            # unit total_mw: kg/mol summed over components.
-                            # unit mw: kg/mol individual components.
-        self.D=[self.MW[i]*self.DM[i] for i in range(len(self.D))]      
+        self.total_mw, _ = self.cal_molecular_weight()
+        
+        self.D=[self.total_mw[i]*self.DM[i] for i in range(len(self.DM))]      
                             # unit: kg/m3
-        self.D0=[self.MW[i]*self.DM0[i] for i in range(len(self.D0))]   
+        self.D0=[self.total_mw[i]*self.DM0[i] for i in range(len(self.DM0))]   
                             # unit: kg/m3
  
