@@ -307,23 +307,23 @@ class met4H2:
         # interval.
         coverage_factors = pd.DataFrame(
             [[np.nan,1,1],
-             [3,np.nan,np.nan],
-             [2.58,np.nan,np.nan],
-             [2,np.nan,np.nan],
-             [1.96,np.nan,np.nan],
-             [1.645,np.nan,np.nan],
-             [1,1/np.sqrt(3),1/np.sqrt(6)],
-             [0.99,np.nan,np.nan]],
-             columns=['Normal','Rectangular','Triangular'],
-             index=['100.0','99.73','99.0','95.45','95.0','90.0','68.27','68.0'],
-             )
+            [3,np.nan,np.nan],
+            [2.58,np.nan,np.nan],
+            [2,np.nan,np.nan],
+            [1.96,np.nan,np.nan],
+            [1.645,np.nan,np.nan],
+            [1,1/np.sqrt(3),1/np.sqrt(6)],
+            [0.99,np.nan,np.nan]],
+            columns=['Normal','Rectangular','Triangular'],
+            index=['100.0','99.73','99.0','95.45','95.0','90.0','68.27','68.0'],
+            )
 
         # Find the correct coverage factor.
         if composition == True:
             coldist = 'composition_unc_distribution'
             colconf = 'composition_unc_confidence'
 
-        # Loop through quantities.    
+        # Loop through quantities.
         for par in quant_list:
             if composition == False:
                 coldist = par+'_distribution'
@@ -462,6 +462,7 @@ class met4H2:
             columns={'quantity_'+unit:'quantity',
                     'pressure_Pa':'pressure',
                     'temperature_K':'temperature'})
+
 
         quant_list = ['quantity_unc','pressure_unc','temperature_unc']
         return self.confidences_and_distributions(
@@ -810,7 +811,7 @@ class met4H2:
 
     def get_gross_calorific_value(
             self,nominal,component_names,n_draws=10000):
-        """Returns H0_frame, which is a data frame containint gross
+        """Returns H0_frame, which is a data frame containing gross
         calorific values (units: J/mol) at reference temperature.
         Reference temperature self.gcv_temperature set in __init__.
 
@@ -1045,11 +1046,11 @@ class met4H2:
                     T = T0,
                     x = x_array.iloc[0,:].to_numpy()).run().Z
                 MM_frame.iloc[t,draw] = AGA8Detail(
-                    P = P0,
+                    P=P0,
                     T = T0,
                     x = x_array.iloc[0,:].to_numpy()).run().MM
                 DM_frame.iloc[t,draw] = AGA8Detail(
-                    P = np.array(pressure.iloc[t,draw]),
+                    P=np.array(pressure.iloc[t,draw]),
                     T = np.array(temperature.iloc[t,draw]),
                     x=x_array.iloc[0,:].to_numpy()).run().D
                 DM0_frame.iloc[t,draw] = AGA8Detail(
@@ -1336,6 +1337,7 @@ class met4H2:
             n_draws = self.monte_carlo_draws['temperature'].shape[1]
         else:
             n_draws = 1
+            self.nominal = True
 
         # get a data frame with nominal values.
         # Column names were defined when saving the input to objects,
@@ -1525,28 +1527,23 @@ class met4H2:
         # to be able to understand what's in the data frames later.
         calculated = frame_list+[D_df,D0_df,Hv_df,Hm_df]
         frame_names = [
-                'Z_','Z0_','MM_','DM_','DM0_','Hg_','D_','D0_','Hv_','Hm_']
-        if any(list(duplicates.values())):
-            for n in range(len(frame_names)):
-                df = pd.DataFrame(
-                    columns=calculated[n].columns,
-                    index=list(
-                    range(
-                    max(
-                    [max(list(duplicates.keys())),
-                    max(max(duplicates.values()))])+1))).add_prefix(
-                    frame_names[n])
-                for keyno in range(len(duplicates)):
-                    df.iloc[list(
-                        duplicates.keys())[keyno],:] = calculated[n].iloc[
-                        keyno,:]
-                    for idx in list(duplicates.values())[keyno]:
-                        df.iloc[idx,:] = calculated[n].iloc[keyno,:]
-                calculated[n] = df
-        else:
-            for fr in range(len(calculated)):
-                calculated[fr] = calculated[fr].add_prefix(
-                    frame_names[fr])
+            'Z_','Z0_','MM_','DM_','DM0_','Hg_','D_','D0_','Hv_','Hm_']
+        for n in range(len(frame_names)):
+            df = pd.DataFrame(
+                columns=calculated[n].columns,
+                index=list(
+                range(
+                max(
+                [max(list(duplicates.keys())),
+                max(max(duplicates.values()))])+1))).add_prefix(
+                frame_names[n])
+            for keyno in range(len(duplicates)):
+                df.iloc[list(
+                    duplicates.keys())[keyno],:] = calculated[n].iloc[
+                    keyno,:]
+                for idx in list(duplicates.values())[keyno]:
+                    df.iloc[idx,:] = calculated[n].iloc[keyno,:]
+            calculated[n] = df
 
         # Put output in dictionary and save to object.
         if nominal == False:
@@ -1609,6 +1606,9 @@ class met4H2:
         the met4H2 object to the uncertainty calculator for energy and
         energy flow calculations."""
 
+        if self.nominal == True:
+            gas_properties = {k.replace('nominal_',''):v for k,v in gas_properties.items()}
+
         # Get what sort of flow we have. This will affect
         # the choice of functional relationship.
         unitstring = self.all_measurement_input.filter(
@@ -1636,7 +1636,7 @@ class met4H2:
                 'Z0|-',
                 'Hv|J/m³']
             # Define functional relationship.
-            functional_relationship = '(P*T0*Z0*Hv*quantity)/(P0*T*Z)'         # Define functional relationship                                                        
+            functional_relationship = '(P*T0*Z0*Hv*quantity)/(P0*T*Z)'         # Define functional relationship
         if flowtype == 'standard_vol':
             output_label_and_unit = ['E|J'] # Define output variable and corresponding unit
             labels_and_units = ['P0|Pa',
@@ -1654,24 +1654,7 @@ class met4H2:
             fr='(P*T0*Z0*Hv*quantity)/(P0*T*Z)' # Assuming uncertainty in standard volume is approx
                                                 # the same as in volume flow.
             functional_relationship=fr
-        if flowtype == 'volume':
-            output_label_and_unit = ['E|J'] # Define output variable and corresponding unit
-            labels_and_units = ['P0|Pa',
-                                'T0|K',
-                                'P|Pa',
-                                'T|K',
-                                'quantity|m³',
-                                'Z|-',
-                                'Z0|-',
-                                'Hv|J/m³']
-            # Need to convert standard volume to volume at line
-            # conditions in the functional relationship.
-            # Consider if it is better to run calculator twice in this
-            # case, since it affects the sensititivy coefficients.
-            fr='(P*T0*Z0*Hv*quantity)/(P0*T*Z)' # Assuming uncertainty in standard volume is approx
-                                                # the same as in volume flow.
-            functional_relationship=fr
-        if flowtype != 'volume_flow' and flowtype != 'standard_vol' and flowtype != 'volume':
+        if flowtype != 'volume_flow' and flowtype != 'standard_vol':
             raise Exception('Code isn\'t finished, please use volume'
                             +' flow as quantity input.')
 
@@ -1861,7 +1844,7 @@ class met4H2:
         return out_matrices, out_labels
 
     def plotter(self,dict1, dict2):
-        """Just for QA purposes."""
+        """Just for QA purposes remove later"""
         parameters = list(dict1.keys()) + ['dict_no']
         frame = pd.DataFrame(columns=parameters)
         for parameter in parameters[:-1]:
@@ -1877,103 +1860,35 @@ class met4H2:
     def test_normality(self, gas_property_dict,filepath):
         """Testing normality using a shapiro test."""
         #quantity = self.monte_carlo_draws['quantity'].iloc[-1,:]
+        if self.nominal==True:
+            print('Using nominal values, there is no distribution to check for normality.')
+        else:
+            for key in gas_property_dict.keys():
+                dist = gas_property_dict[key].iloc[-1,:]
+                for i in range(len(gas_property_dict[key])):
+                    _, p = ss.shapiro(list(gas_property_dict[key].iloc[i,:]))
+                    if p > 0.05: continue
+                    else:
+                        print("Warning: Gas property ",key,'at time',
+                            str(self.all_measurement_input.iloc[i,0]),
+                            'seems not to have a Gaussian distribution',
+                            'according to the Shapiro-test.')
 
-        for key in gas_property_dict.keys():
-            dist = gas_property_dict[key].iloc[-1,:]
-            for i in range(len(gas_property_dict[key])):
-                _, p = ss.shapiro(list(gas_property_dict[key].iloc[i,:]))
-                if p > 0.05: continue
-                else:
-                    print("Warning: Gas property ",key,'at time',
-                        str(self.all_measurement_input.iloc[i,0]),
-                        'seems not to have a Gaussian distribution',
-                        'according to the Shapiro-test.')
+                # Also make a plot.
+                #fig = sns.histplot(data = list(dist)).get_figure()
+                mu, std = ss.norm.fit(np.array(dist,dtype=float))
 
-            # Also make a plot.
-            # tegne på en normalfordeling med mean og std.
-            #fig = sns.histplot(data = list(dist)).get_figure()
-            mu, std = ss.norm.fit(np.array(dist,dtype=float))
+                # Plot the histogram.
+                plt.hist(dist, bins=10, density=True, alpha=0.6, color='b')
 
-            # Plot the histogram.
-            plt.hist(dist, bins=10, density=True, alpha=0.6, color='b')
+                # Plot the PDF.
+                xmin, xmax = plt.xlim()
+                x = np.linspace(xmin, xmax, 100)
+                p = ss.norm.pdf(x, mu, std)
+                plt.plot(x,p)
+                plt.title(key)
+                plt.savefig(
+                    'figures/gas_property_distributions/'
+                    +key)
+                plt.clf()
 
-            # Plot the PDF.
-            xmin, xmax = plt.xlim()
-            x = np.linspace(xmin, xmax, 100)
-            p = ss.norm.pdf(x, mu, std)
-            plt.plot(x,p)
-            plt.title(key)
-            plt.savefig(
-                'figures/gas_property_distributions/'
-                +key)
-            plt.clf()
-
-
-if __name__ == '__main__':
-
-
-    meter = metering()
-    stream = streamProcess()
-    m4h2 = met4H2()
-    ucalc = uncertaintyCalculator()
-
-    m4h2.trend_path = os.path.join(
-        os.getcwd(),'modules','TREND','TREND 5.0')
-    m4h2.trend_dll_path = os.path.join(
-        m4h2.trend_path,'TREND_x64.dll') # running 64 bit Python
-    filepath = os.getcwd()
-    filename = 'settings_USM_example_with_He_20230705.xlsx'
-    filename = 'settings_USM_example_20230705.xlsx'
-    #filename = 'settings_example_20230616.xlsx'
-    n_draws = 10    # With many draws code will take longer to run
-                    # Keeping it low for testing purposes.
-
-    # Reading the settings file is one of potentially several
-    # ways to create node, stream and meter objects.
-    m4h2.read_settings_file(
-        ucalc, stream, meter, filename,
-        filepath = filepath, meter_type = 'USM')
-
-    # When one is happy with node, info from stream and
-    # meter are combined in a big data frame.
-    m4h2.collect_measurement_input(stream,meter)
-
-    # Based on the m4h2.all_measurement_input frame,
-    # one can get lhs montecarlo draws.
-    m4h2.draw_lhs_monte_carlo_samples(
-        n_draws=n_draws)
-
-    # Decide whether to do nominal calculations with no uncertainties
-    # or not. If using method = 'pyforfluids' or 'TREND',
-    # default eqn of state is 'GERG2008',
-    # but this can be modified to 'AGA8' if using TREND.
-    # If method = 'AGA8Detail' AGA8 eqn of stat is used.
-    pyforfluids_properties = m4h2.compute_gas_properties(
-        method='pyforfluids')
-
-    # Test normality.
-    m4h2.test_normality(pyforfluids_properties,filepath)
-
-    # The uncertainty calculator accepts a dictionary
-    # as input. Create that dictionary with initialize
-    # uncertainty calculator. comutation method could
-    # also be set to 'analytical'
-    m4h2.initialize_uncertainty_calculator(
-        ucalc,
-        pyforfluids_properties,
-        computation_method='lhs_montecarlo',
-        n_mc_draws=1000)
-
-    ucalc.perform_uncertainty_analysis()
-
-    # A few ways to plot the output. Make sure to
-    # use a suitable file path.
-    plot1 = ucalc.plot_with_temporal_correlations(
-        r_vector = [0,0.5,1],
-        plot_type = 'absolute',
-        filepath=filepath+'\\figures\\uncertainty_in_time')
-    plot2 = ucalc.plot_without_temporal_correlations(filepath+'\\figures\\uncertainty_in_time')
-    plot3 = ucalc.plot_simple_bar_budget(filepath+'\\figures\\uncertainty_budget')
-
-    # In case one wishes to view the results in excel.
-    ucalc.output_to_excel(os.getcwd(),'tester.xlsx')
