@@ -1817,7 +1817,7 @@ class uncertaintyCalculator:
         if len(corr_mat)==0:corr_mat = correlation_matrix
         self.input_dictionary['list_correlation_matrix'] = corr_mat
 
-    def simple_bar_budget(self,filepath=None):
+    def plot_simple_bar_budget(self,filepath=None):
         """Reads relevant parts of self.out_frames,
         and displays a barchart representing
         the total uncertainty and uncertainty contributions of the
@@ -1855,7 +1855,7 @@ class uncertaintyCalculator:
                 except: raise Exception('Could not save file to '+filepath)
             plt.clf()
 
-    def timeline_budget(self,filepath=None,plot_type='relative'):
+    def plot_without_temporal_correlations(self,filepath=None,plot_type='relative'):
         """Reads relevant parts of self.out_frames,
         and displays a line chart representing
         the total uncertainty and uncertainty contributions of the
@@ -1919,7 +1919,7 @@ class uncertaintyCalculator:
                 except: raise Exception('Could not save file to '+filepath)
             plt.clf()
 
-    def timeline_budget_with_temporal_correlations(
+    def plot_with_temporal_correlations(
             self,
             r_vector,
             plot_type='relative',
