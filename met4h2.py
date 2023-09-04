@@ -1875,6 +1875,7 @@ class met4H2:
                             'according to the Shapiro-test.')
 
                 # Also make a plot.
+                # tegne på en normalfordeling med mean og std.
                 #fig = sns.histplot(data = list(dist)).get_figure()
                 mu, std = ss.norm.fit(np.array(dist,dtype=float))
 
@@ -1891,4 +1892,5 @@ class met4H2:
                     'figures/gas_property_distributions/'
                     +key)
                 plt.clf()
+
 
