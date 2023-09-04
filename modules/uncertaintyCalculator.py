@@ -1,7 +1,7 @@
-"""Author information: NORCE, Lea Starck, lsta@norceresearch.no
+"""Author information: NORCE, Lea Starck, lsta@norceresearch.no 
 
-Disclaimer: NORCE is not in any respect responsible for the use of
-the code or resuls thereof, and assumes no responsibility or
+Disclaimer: NORCE is not in any respect responsible for the use of 
+the code or resuls thereof, and assumes no responsibility or 
 guarantee for the overall functionality."""
 
 import math
@@ -27,7 +27,7 @@ from sympy import diff
 
 
 class uncertaintyCalculator:
-    """Contains
+    """Contains 
         - methods for analytical and numerical computation
         - methods that do monte carlo draws imposing correlations on random input distributions
             - using the Cholesky/Iman-Conover algorithm (code from mcerp).
@@ -89,7 +89,7 @@ class uncertaintyCalculator:
         if unit.find("(") == -1:
             unit = unit.replace('(','').replace(')','')
             simple_units.append(unit)
-            is_simple_unit = True  
+            is_simple_unit = True
         while is_simple_unit == False:
             simple_unit = unit[unit.find("(")+1:unit.find(")")]
             simple_unit = simple_unit.replace('(','').replace(')','')
@@ -102,7 +102,7 @@ class uncertaintyCalculator:
         fahrenheit_in_denominator = False
         if is_simple_unit == False:
             if '°F' in unit:
-                f_idx = unit.find('°F')   
+                f_idx = unit.find('°F')
                 slash_idx = unit.find('/')
                 if not slash_idx == -1:
                     first_left_p = unit.find('(',slash_idx)
@@ -113,14 +113,14 @@ class uncertaintyCalculator:
                         idx = after_slash.find(')')
                         right_p = right_p + idx +1
                         after_slash = after_slash[idx+1:]
-                    if f_idx > first_left_p: 
+                    if f_idx > first_left_p:
                         if f_idx < right_p:
                             fahrenheit_in_denominator = True
         return simple_units, is_simple_unit, fahrenheit_in_denominator
 
     def convert_simple_units_to_SI(self,input_dict):
         """Converts the input variable units to SI units.
-         Potential pitfalls:
+        Potential pitfalls:
             - kinds_of_variables needs to be updated so it can take on any conceivable input unit.
             - there may have to be made more ifs to handle derived units or units that are not in the sympy module.
             - The user could mislabel the units, f.ex., use C or c as a unit for temperature, but the
@@ -169,8 +169,8 @@ class uncertaintyCalculator:
                                 if key == unit: unit = power_units[key]
                         else:
                             print('The input variable \''+label+
-                                  '\' with units \''+input_dict[label][t][1]+
-                                  '\' is not supported. Please use input variables with recognized units.')
+                                '\' with units \''+input_dict[label][t][1]+
+                                '\' is not supported. Please use input variables with recognized units.')
 
                     for kind in kinds_of_variables:
                         # Figure out what sort of variable label is and what its main SI/SI derived unit is.
@@ -360,6 +360,117 @@ class uncertaintyCalculator:
         for i in range(len(params)):
             params[i]._mcpts = new_data[:, i]
 
+    def correlate(self,params,correlation_matrix):
+        # This method was found at
+        # https://github.com/tisimst/mcerp/blob/master/mcerp/correlate.py
+        # only slightly modified to accommodate SVD when
+        # Cholesky decomposition fails with negative eigenvalues.
+        """
+        Force a correlation matrix on a set of statistically
+        distributed objects.
+        This function works on objects in-place.
+
+        Parameters
+        ----------
+        params : array
+            An array of of uv objects.
+        correlation_matrix : 2d-array
+            The correlation matrix to be imposed
+        """
+        # Make sure all inputs are compatible
+        assert all(
+            [isinstance(param, mc.UncertainFunction) for param in params]
+        ), 'All inputs to "correlate" must be of type "UncertainFunction"'
+
+        # Put each ufunc's samples in a column-wise matrix
+        data = np.vstack([param._mcpts for param in params]).T
+
+        # Apply the correlation matrix to the sampled data
+        new_data = self.induce_correlations(data, correlation_matrix)
+
+        # Re-set the samples to the respective variables
+        for i in range(len(params)):
+            params[i]._mcpts = new_data[:, i]
+
+    def induce_correlations(self, data, correlation_matrix):
+        # This method was found at
+        # https://github.com/tisimst/mcerp/blob/master/mcerp/correlate.py
+        # only slightly modified to accommodate SVD when Cholesky
+        # decomposition fails with negative eigenvalues.
+        """
+        Induce a set of correlations on a column-wise dataset
+
+        Parameters
+        ----------
+        data : 2d-array
+            An m-by-n array where m is the number of samples and n is
+            the number of independent variables, each column of the
+            array corresponding to each variable
+        correlation_matrix : 2d-array
+            An n-by-n array that defines the desired correlation
+            coefficients (between -1 and 1). Note: the matrix must
+            be symmetric and positive-definite in order to induce.
+
+        Returns
+        -------
+        new_data : 2d-array
+            An m-by-n array that has the desired correlations.
+        """
+
+        # Create a rank-matrix
+        data_rank = np.vstack(
+            [mc.rankdata(datai) for datai in data.T]).T
+
+        # Separate equal ranks.
+        for a in range(data_rank.shape[1]):
+            encountered_before = list()
+            for b in range(data_rank.shape[0]):
+                if not data_rank[b,a].is_integer():
+                    if data_rank[b,a] in encountered_before:
+                        data_rank[b,a] = math.ceil(data_rank[b,a])
+                    else:
+                        encountered_before.append(data_rank[b,a])
+                        data_rank[b,a] = math.floor(data_rank[b,a])
+
+        # Generate van der Waerden scores
+        data_rank_score = data_rank/(data_rank.shape[0] + 1.0)
+        data_rank_score = norm(0, 1).ppf(data_rank_score)
+
+        # Calculate the lower triangular matrix of the Cholesky
+        # decomposition of the desired correlation matrix
+        p = mc.chol(correlation_matrix)
+
+        # Calculate the current correlations
+        t = np.corrcoef(data_rank_score, rowvar=0)
+
+        # Calculate the lower triangular matrix of the
+        # Cholesky decomposition of the current
+        # correlation matrix.
+        q = mc.chol(t)
+
+        # Calculate the re-correlation matrix
+        s = np.dot(p, np.linalg.inv(q))
+
+        # Calculate the re-sampled matrix
+        new_data = np.dot(data_rank_score, s.T)
+
+        # Create the new rank matrix
+        new_data_rank = np.vstack(
+            [mc.rankdata(datai) for datai in new_data.T]).T
+
+        # Sort the original data according to new_data_rank
+        for i in range(data.shape[1]):
+            _, order = np.unique(
+                np.hstack((data_rank[:, i],
+                        new_data_rank[:, i])),
+                        return_inverse=True)
+            old_order = order[: new_data_rank.shape[0]]
+            new_order = order[-new_data_rank.shape[0] :]
+            tmp = data[np.argsort(old_order), i][new_order]
+            data[:, i] = tmp[:]
+
+        return data
+
     def impl_SVD(self,A):
         """
         Calculate the SVD equivalent of
@@ -495,6 +606,8 @@ class uncertaintyCalculator:
                     unc = uncertainties[label][t][0]
                 if float(unc) == float(0):
                     unc = 0.00000001
+                if pd.isna(unc) == True:
+                    unc = 0.00000001
                 input_var = self.draw(
                     limits[label][t],
                     input_quantities_dictionary[label][t][0],
@@ -515,7 +628,7 @@ class uncertaintyCalculator:
                 applied_corr_matrix = mc.correlation_matrix(mc_sims)
             else:
                 # Impose correlation using Iman Conover algorithm.
-                mc.correlate(mc_sims,c_matrix)
+                self.correlate(mc_sims,c_matrix)
                 applied_corr_matrix = mc.correlation_matrix(mc_sims)
 
             # Put into data frame
@@ -1704,7 +1817,7 @@ class uncertaintyCalculator:
         if len(corr_mat)==0:corr_mat = correlation_matrix
         self.input_dictionary['list_correlation_matrix'] = corr_mat
 
-    def plot_simple_bar_budget(self,filepath=None):
+    def simple_bar_budget(self,filepath=None):
         """Reads relevant parts of self.out_frames,
         and displays a barchart representing
         the total uncertainty and uncertainty contributions of the
@@ -1724,7 +1837,7 @@ class uncertaintyCalculator:
                 contributions_df.iloc[-1,:]).transpose()
             contributions_df = contributions_df.drop(columns=['Absolute values','Total absolute uncertainty'])
             # Make plot
-            fig, ax = plt.subplots()
+            _, ax = plt.subplots()
             y_pos = np.arange(len(contributions_df.columns))
             ax.barh(y_pos,contributions_df.iloc[0,:],xerr=None,align='center')
             ax.barh(y_pos[-1],contributions_df.iloc[0,-1],xerr=None,align='center')
@@ -1740,9 +1853,9 @@ class uncertaintyCalculator:
                     plt.savefig(filepath+
                                 '/uncertainty_contributions')
                 except: raise Exception('Could not save file to '+filepath)
-            return fig
+            plt.clf()
 
-    def plot_without_temporal_correlations(self,filepath=None,plot_type='relative'):
+    def timeline_budget(self,filepath=None,plot_type='relative'):
         """Reads relevant parts of self.out_frames,
         and displays a line chart representing
         the total uncertainty and uncertainty contributions of the
@@ -1804,9 +1917,9 @@ class uncertaintyCalculator:
                     plt.savefig(filepath+
                                 '/uncertainty_contributions_in_time')
                 except: raise Exception('Could not save file to '+filepath)
-            return fig
+            plt.clf()
 
-    def plot_with_temporal_correlations(
+    def timeline_budget_with_temporal_correlations(
             self,
             r_vector,
             plot_type='relative',
@@ -1897,7 +2010,7 @@ class uncertaintyCalculator:
                     plt.savefig(filepath+
                                 '/uncertainty_contributions_correlated_in_time')
                 except: raise Exception('Could not save file to '+filepath)
-            return fig
+            plt.clf()
 
     def make_uncertainty_contributions_df(self):
         """Create the data frame containing uncertainty
@@ -1927,7 +2040,7 @@ class uncertaintyCalculator:
                 'Total relative uncertainty'] = np.sqrt(
                 all_contributions.multiply(
                 all_contributions).sum(axis=1))
-
+        # TODO fix all_contributions so it works for montecarlo draws as well.
         if self.input_dictionary[
             'computation_method'] == 'lhs_montecarlo':
             all_contributions = pd.DataFrame()
@@ -1941,8 +2054,12 @@ class uncertaintyCalculator:
                     'output_std_comb_rel_uncertainties'].iloc[:,1]
             corrs = total.pow(2) - contributions.pow(2).sum(axis=1)
             correlations = corrs.copy()
-            correlations = pd.Series(np.where(corrs < 0 , -np.sqrt(np.abs(corrs)), correlations))
-            correlations = pd.Series(np.where(corrs >= 0 , np.sqrt(np.abs(corrs)), correlations))
+            correlations = pd.Series(np.where(corrs < 0 ,
+                                            -np.sqrt(np.array(np.abs(corrs),
+                                                            dtype=np.float64)),
+                                                            correlations))
+            correlations = pd.Series(np.where(corrs >= 0 , np.sqrt(np.array(np.abs(corrs),
+                                                            dtype=np.float64)), correlations))
 
             all_contributions = pd.concat(
                 [contributions,correlations],
