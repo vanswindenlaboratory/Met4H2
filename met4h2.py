@@ -38,6 +38,7 @@ class met4H2:
 
     def __init__(self):
         self.all_measurement_input = pd.DataFrame()
+        self.nominal = False
         self.monte_carlo_draws = {}
         self.gcv_temperature = 25    # Temperature at which to get gross
                                         # calorific value.
@@ -67,8 +68,8 @@ class met4H2:
                                             'Benzene','Toluene','Ethylbenzene',
                                             'o-Xylene','Methanol','Methanetiol',
                                             'H2','H2O','H2S','NH3','HCN','CO',
-                                            'COS','CS2','He'],
-                                            [['Nitrogen','nitrogen','nitrogen',28.0134],
+                                            'COS','CS2','He','O2','Ar'],
+                                            [['Nitrogen','nitrogen','nitrogen',28.0134], #Coolprop, TREND, pyforfluids
                                             ['CO2','co2','carbon_dioxide',44.0095],
                                             ['Methane','methane','methane',16.04],
                                             ['Ethane','ethane','ethane',30.07],
@@ -83,10 +84,10 @@ class met4H2:
                                             ['3-Methylpentane'],
                                             ['2,2-Dimethylbutane'],
                                             ['2,3-Dimethylbutane'],
-                                            ['n-Heptane'],
-                                            ['n-Octane'],
-                                            ['n-Nonane'],
-                                            ['n-Decane'],
+                                            ['n-Heptane','heptane','heptane',100.205],
+                                            ['n-Octane','octane','octane',114.232],
+                                            ['n-Nonane','nonane','nonane',128.259],
+                                            ['n-Decane','decane','decane',142.286],
                                             ['n-Undecane'],
                                             ['n-Dodecane'],
                                             ['n-Tridecane'],
@@ -116,14 +117,16 @@ class met4H2:
                                             ['Methanol'],
                                             ['Methanetiol'],
                                             ['Hydrogen','hydrogen','hydrogen',2.016],
-                                            ['Water'],
-                                            ['Hydrogen sulfide'],
+                                            ['Water','water','water',18.01528],
+                                            ['Hydrogen sulfide','h2s','hydrogen_sulfide',34.08],
                                             ['Ammonia'],
                                             ['Hydrogen cyanide'],
-                                            ['Carbon monoxide'],
+                                            ['Carbon monoxide','co','carbon_monoxide',28.01],
                                             ['Carbonyl sulfide'],
                                             ['Carbon disulfide'],
-                                            ['Helium','helium','helium',4.003]]))
+                                            ['Helium','helium','helium',4.003],
+                                            ['Oxygen','oxygen','oxygen',31.99],
+                                            ['Argon','argon','argon',39.948]]))
 
     def all_equal(self,iterator):
         """Checking that all items in iterator are identical.
@@ -1892,5 +1895,3 @@ class met4H2:
                     'figures/gas_property_distributions/'
                     +key)
                 plt.clf()
-
-
