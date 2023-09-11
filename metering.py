@@ -22,7 +22,7 @@ class metering:
         warnings.resetwarnings() 
 
     def read_configuration(self,xls):
-        """Reading info about the configuration, e.g., meter in series or 
+        """Reading info about the configuration, e.g., meter in series or
         parallel, etc."""
         warnings.simplefilter('ignore')
         self.configuration = pd.read_excel(xls,'Configuration')
@@ -31,26 +31,26 @@ class metering:
     def read_flow_meter_uncertainties(
             self,ucalc,stream,m4h2,xls,stream_nominal_values,meter_type=None):
         """This method reads the measurement uncertainty of the flow meter.
-        The method also reads the associated uncertainties of the 
-        temperature and pressure transmitters that are assumed connected 
+        The method also reads the associated uncertainties of the
+        temperature and pressure transmitters that are assumed connected
         to the meter.
 
-        Any relative uncertainties are converted to absolute uncertainties. 
-        Absolute uncertainties are converted to SI units using a function 
+        Any relative uncertainties are converted to absolute uncertainties.
+        Absolute uncertainties are converted to SI units using a function
         from the met4h2 object.
-        
-        The meter information is saved to the metering object in 
+
+        The meter information is saved to the metering object in
         self.transmitter_uncertainties.
-        
+
         Inputs: ucalc:                  uncertaintyCalculator object
                 stream:                 stream object
                 m4h2:                   m4h2 object
                 xls:                    excel object
                 meter_type:             f.ex 'USM'
-                stream_nominal_values:  SI-converted measurements from 
+                stream_nominal_values:  SI-converted measurements from
                                         stream
                                         """
-            
+
 
         if meter_type == None:
             try:
@@ -60,8 +60,8 @@ class metering:
                                     'read_settings_file()')
 
 
-        # Reading uncertainties from file. 
-        # Are the strings too 'magic'? 
+        # Reading uncertainties from file.
+        # Are the strings too 'magic'?
         # Add that to discussion on input file.
         warnings.simplefilter('ignore')
         unc_meter_info = pd.read_excel(xls,meter_type+'_unc')
@@ -69,15 +69,15 @@ class metering:
         unc_pressure = pd.read_excel(xls,'P_unc')
         warnings.resetwarnings()
 
-        # Get square sum of meter uncertainty contributions that are 
+        # Get square sum of meter uncertainty contributions that are
         # not NaN.
         # Is string too 'magic'? Add that to discussion on input file.
         # if meter_type == 'USM':
         unc_meter = unc_meter_info[unc_meter_info['Uncertainty'].notnull()]
         unc_info_meter = [
             np.sqrt(sum(np.square(unc_meter['Uncertainty'].to_numpy())))]
-        
-        
+
+
         # Check that the meter input uncertainty units are consistent.
         # Are strings too 'magic'? Add that to discussion on input file.
         col = ['Unit','Confidence interval','Distribution']
@@ -93,20 +93,20 @@ class metering:
                     + ' and distributions.')
             counter = counter + 1
         unc_info_meter.append(unc_meter_info['Input value']
-                              [unc_meter_info['Input variable'] == 'Low_limit'].values[0])
+                            [unc_meter_info['Input variable'] == 'Low_limit'].values[0])
         unc_info_meter.append(unc_meter_info['Input value']
-                              [unc_meter_info['Input variable'] == 'High_limit'].values[0])
+                            [unc_meter_info['Input variable'] == 'High_limit'].values[0])
         unc_info_meter.append(unc_meter_info['Unit']
-                              [unc_meter_info['Input variable'] == 'Low_limit'].values[0].split('_')[1])
+                            [unc_meter_info['Input variable'] == 'Low_limit'].values[0].split('_')[1])
         unc_info_meter.append(unc_meter_info['Unit']
-                              [unc_meter_info['Input variable'] == 'High_limit'].values[0].split('_')[1])
-        
+                            [unc_meter_info['Input variable'] == 'High_limit'].values[0].split('_')[1])
 
-        # Add flow meter, P and T, and composition uncertainties 
-        # to a common data frame. 
-        
-        # Note that pressure and temperature uncertainty is read from the 
-        # Misc-cell, if this is zero, then that explains the zero std 
+
+        # Add flow meter, P and T, and composition uncertainties
+        # to a common data frame.
+
+        # Note that pressure and temperature uncertainty is read from the
+        # Misc-cell, if this is zero, then that explains the zero std
         # distribution after monte carlo draws.
         # Are strings too 'magic'? Add that to discussion on input file.
         unc_info_P = [
@@ -147,18 +147,18 @@ class metering:
         colnames = []
         for m in ['quantity_','pressure_','temperature_']:
             for n in ['','_unit','_confidence','_distribution',
-                      '_lower_limit','_upper_limit',
-                      '_lower_limit_unit','_upper_limit_unit']:
+                    '_lower_limit','_upper_limit',
+                    '_lower_limit_unit','_upper_limit_unit']:
                 colnames.append(m+'unc'+n)
         data = pd.DataFrame([unc_info],columns=colnames)
-           
+
         # Now prepare SI conversion of uncertainties.
         uncertainties = ['quantity_unc','pressure_unc','temperature_unc']
-        
+
         labels = ['quantity','pressure','temperature']
         unc_units = [x+'_unit' for x in uncertainties]
 
-        # Convert any relative uncertainties to absolute uncertainties. 
+        # Convert any relative uncertainties to absolute uncertainties.
         stream_nominal_values = stream.process_data.drop(
             columns = ['DateTime','Uptime_h'])
         data = pd.concat([stream.process_data['DateTime'],data],axis=1)
@@ -171,38 +171,36 @@ class metering:
                 data[unc_units[i]] = [
                     nominal_uncertainty.columns[0].split('_')[-1]]*len(data)
         data = data.ffill()
-        
+
         lower_limits = ['quantity_unc_lower_limit','pressure_unc_lower_limit','temperature_unc_lower_limit']
         upper_limits = ['quantity_unc_upper_limit','pressure_unc_upper_limit','temperature_unc_upper_limit']
-        # Do SI conversion of absolute uncertainties.     
+        # Do SI conversion of absolute uncertainties.
         self.transmitter_uncertainties = m4h2.SI_conversion(
             ucalc,data,uncertainties,labels)
         self.transmitter_uncertainties = m4h2.SI_conversion(
             ucalc,data,lower_limits,labels)
         self.transmitter_uncertainties = m4h2.SI_conversion(
             ucalc,data,upper_limits,labels)
-        a = 0
-        
-    
+
     def calc_composition_uncertainties(self,method='GC'): #### Very tentative.
         """To be defined. method could be 'GC' or 'lab_sample'.
         May want to calculate it given ISO or meter specifications.
-        For now it is read from file in read_composition_uncertainties.""" 
+        For now it is read from file in read_composition_uncertainties."""
 
     def read_composition_uncertainties(self,xls,stream):
-        """This method reads the measurement uncertainty of the gas 
+        """This method reads the measurement uncertainty of the gas
         composition from the xls object.
 
-        Any relative uncertainties are converted to absolute 
-        uncertainties. Absolute uncertainties are converted to SI units 
-        using a function from the met4h2 object."""   
+        Any relative uncertainties are converted to absolute
+        uncertainties. Absolute uncertainties are converted to SI units
+        using a function from the met4h2 object."""
 
         warnings.simplefilter('ignore')
         unc_composition = pd.read_excel(xls,'Composition_unc')
         warnings.resetwarnings()
 
         # Set colnames based on stream.composition, which is a well
-        # defined data frame created in metering.read_composition. 
+        # defined data frame created in metering.read_composition.
         # Are strings too 'magical'? That is something for the general
         # discussion on input.
         comp_col_names = [
@@ -214,12 +212,12 @@ class metering:
             'composition_unc_distribution'] + comp_col_names
         
         # Create composition uncertainty data frame and fill columns.
-        composition_uncertainties = pd.DataFrame(columns=colnames)  
+        composition_uncertainties = pd.DataFrame(columns=colnames)
         
         # Are strings too 'magical'? That is something for the general
-        # discussion on the settings file. This sheet certainly has 
+        # discussion on the settings file. This sheet certainly has
         # potential for improvement.
-        # Copy the uncertainties from unc_composition to 
+        # Copy the uncertainties from unc_composition to
         # composition_uncertainties.
         unc_composition = unc_composition.rename(
             columns = dict(zip(
@@ -250,8 +248,8 @@ class metering:
                 columns=['DateTime','composition_unit'])
             if rel_uncertainties.shape == composition.shape:
                 abs_uncertainties = pd.DataFrame(
-                    (rel_uncertainties.values/100)*composition.values, 
-                    columns=rel_uncertainties.columns, 
+                    (rel_uncertainties.values/100)*composition.values,
+                    columns=rel_uncertainties.columns,
                     index=rel_uncertainties.index)
             if len(
                 rel_uncertainties) == 1 and rel_uncertainties.shape[
@@ -259,8 +257,8 @@ class metering:
                 abs_uncertainties = composition.multiply(
                     np.array(rel_uncertainties/100), axis='columns')
             else: raise Exception('Sizes of input composition and',
-                                  +'composition uncertainty matrices'
-                                  +'do not match.')
+                                +'composition uncertainty matrices'
+                                +'do not match.')
             to_rename = dict(zip(
                 abs_uncertainties.columns.to_list(),[
                 i + '_unc' for i in abs_uncertainties.columns.tolist()]))
@@ -269,12 +267,12 @@ class metering:
             composition_uncertainties = abs_uncertainties.merge(
                 composition_uncertainties,how='left')
         # Get distribution
-        distribution = unc_composition['H2_unc'][
+        distribution = unc_composition[unc_composition.columns[1]][
             unc_composition['Comp']=='Distribution'].values[0]
         composition_uncertainties[
             'composition_unc_distribution'] = [distribution]
         # Get confidence interval
-        confidence = unc_composition['H2_unc'][
+        confidence = unc_composition[unc_composition.columns[1]][
             unc_composition['Comp']=='Confidence interval'].values[0]
         composition_uncertainties[
             'composition_unc_confidence'] = [confidence]
@@ -283,5 +281,4 @@ class metering:
             'composition_unc_unit'] = ['mol_mol-1']
         self.composition_uncertainites = pd.concat(
             [stream.composition[['DateTime']],
-             composition_uncertainties],axis=1)
-    
+            composition_uncertainties],axis=1)
