@@ -1,12 +1,15 @@
-"""Author information: NORCE, Lea Starck, lsta@norceresearch.no 
+"""Author information: NORCE, Lea Starck, lsta@norceresearch.no
 
-Disclaimer: NORCE is not in any respect responsible for the use of 
-the code or resuls thereof, and assumes no responsibility or 
+Disclaimer: NORCE is not in any respect responsible for the use of
+the code or results thereof, and assumes no responsibility or
 guarantee for the overall functionality."""
 
 import math
 import warnings
 import os
+import re
+import random
+import string
 
 import numpy as np
 import pandas as pd
@@ -27,16 +30,22 @@ from sympy import diff
 
 
 class uncertaintyCalculator:
-    """Contains 
+    """Contains
         - methods for analytical and numerical computation
-        - methods that do monte carlo draws imposing correlations on random input distributions
-            - using the Cholesky/Iman-Conover algorithm (code from mcerp).
-            - using the slightly modified mcerp code to do SVD when Cholesky fails.
-            - mcerp code found at: https://github.com/tisimst/mcerp/blob/master/mcerp/correlate.py under BSD 3-Clause license.
+        - methods that create monte carlo distributions imposing
+        correlations on random input distributions descriptions.
+            - using the Cholesky/Iman-Conover
+            algorithm (code from mcerp).
+            - using the slightly modified mcerp code 
+            to do SVD when Cholesky fails.
+            - mcerp code found at: 
+            https://github.com/tisimst/mcerp/blob/master/mcerp/correlate.py
+            under BSD 3-Clause license.
+        - methods for using external montecarlo distributions
         - method for compiling math expressions.
         - methods for SI unit conversion.
-        - methods for collecting computation results in data frames and writing output to excel file.
-        - methods that make the calculator easy to run with default settings.
+        - methods for collecting computation results in data
+        frames and writing output to excel file.
         """
 
     def __init__(self):
@@ -44,41 +53,82 @@ class uncertaintyCalculator:
         self.input_dictionary = {}
         self.analysis_results = {}
         self.partial_analysis_results = {}
-        self.input_dictionary['computation_method'] =  'lhs_montecarlo'
+        self.input_dictionary['computation_method'] =  'ucalc_montecarlo'
         self.montecarlo_sensitivity_draws = 50
 
-    def initialize_calculator(self,input_dictionary=None,SI_conversion=True):
+    def remove_outer_parentheses(self,text):
+        """Removes outer parentheses if there's only one pair surrounding the string.
+
+        Args:
+            text: The input string.
+
+        Returns:
+            The string with outer parentheses removed if the condition is met,
+            otherwise the original string.
+        """
+        # Check if the string matches the pattern of having only one parenthesis pair
+        # surrounding the entire content.
+        if re.match(r'^\(.*\)$', text) and text.count('(') == 1 and text.count(')') == 1:
+            return text[1:-1]  # Remove the first and last characters (parentheses)
+        else:
+            return text
+
+    def initialize_calculator(self,input_dictionary=None,SI_conversion=True,nominal_mc={}):
+        """Several variables have already been instantiated on
+        uncertaintyCalculator. Now take this information, and
+        do a few initial computations prior to the uncertainty
+        calculation.
+
+        Sets the input dictionary from variables on the object,
+        defines a zero-correlation matrix if no correlation
+        matrix was set, performs SI-conversions, and computes
+        standard uncertainties from input uncertainties."""
+
+        #self.nominal_input_montecarlo = nominal_mc
+
         if input_dictionary is not None:
             self.input_dictionary = input_dictionary
+
         if not 'list_correlation_matrix' in self.input_dictionary:
-            self.set_correlation_matrix(correlation_matrix=[[0,0,0]])
+            n = len(self.input_dictionary['labels_and_units'])-1
+            triangle_number = int((n)*(n + 1) / 2)
+            if not self.input_dictionary['time_stamps'] is None:
+                t = len(self.input_dictionary['time_stamps'])
+            else: t = 1
+            self.set_correlation_matrix(
+                correlation_matrix=t*[[0]*triangle_number])
 
         exist_list = list()
         for elm in self.input_dictionary['list_correlation_matrix']:
             if sum(elm) == 0:
                 exist_list.append(False)
             else: exist_list.append(True)
-        self.partial_analysis_results['correlations_exist'] = exist_list
+        self.partial_analysis_results[
+            'correlations_exist'] = exist_list
         if SI_conversion == True:
             # Convert input units to SI.
-            input_keys = ['input_quantities_dictionary','input_uncertainties']
+            input_keys = [
+                'input_quantities_dictionary',
+                'input_uncertainties']
             self.SI_conversion(input_keys=input_keys)
             # Convert output units to SI.
             output_key = 'out_var_label'
-            self.SI_conversion(output_key=output_key) 
+            self.SI_conversion(output_key=output_key)
         self.calculate_standard_uncertainty()
 
     def convert_temperature_to_kelvin(self,temp,unit,addition=True):
         if unit == 'C':
-            if addition == True: kelvin = temp + 273.15
+            if addition == True:
+                kelvin = temp + 273.15
             else:
-                kelvinfactor = temp
-                kelvin = kelvinfactor
+                kelvin_factor = temp
+                kelvin = kelvin_factor
         if unit == 'F':
-            if addition == True: kelvin = (5/9) * (temp - 32) + 273.15
+            if addition == True:
+                kelvin = (5/9) * (temp - 32) + 273.15
             else:
-                kelvinfactor = (5/9) * temp
-                kelvin = kelvinfactor
+                kelvin_factor = (5/9) * temp
+                kelvin = kelvin_factor
         if unit == 'R':
             kelvin = (5/9) * temp
         return kelvin, 'K'
@@ -121,15 +171,26 @@ class uncertaintyCalculator:
     def convert_simple_units_to_SI(self,input_dict):
         """Converts the input variable units to SI units.
         Potential pitfalls:
-            - kinds_of_variables needs to be updated so it can take on any conceivable input unit.
-            - there may have to be made more ifs to handle derived units or units that are not in the sympy module.
-            - The user could mislabel the units, f.ex., use C or c as a unit for temperature, but the
-                code will think C is the unit charge, and c is the speed of light. To avoid confusion refer to the
-                Excel file which lists supported units under their assigned categories. Also the
-                unit of the computed output should be compared to the user inputted desired output unit. If they do not
-                match throw an error message.
-            - composite units must be supplied with parentheses according to the pattern given in the example files.
-                Only one fraction is allowed within the composite unit. """
+            - kinds_of_variables needs to be updated so it
+            can take on any conceivable input unit.
+            - there may have to be made more ifs to handle
+            derived units or units that are not in the sympy
+            module.
+            - The user could mislabel the units, f.ex.,
+            use C or c as a unit for temperature, but the
+                code will think C is the unit charge,
+                and c is the speed of light.
+                To avoid confusion refer to the Excel file
+                which lists supported units under their
+                assigned categories.
+                Also the unit of the computed output should
+                be compared to the user inputted desired output
+                unit. If they do not match throw an error
+                message is thrown.
+            - composite units must be supplied with parentheses
+            according to the pattern given in the example files.
+            Only one fraction is allowed within the composite unit.
+            """
 
         # SI unit is always the first element in each list.
         kinds_of_variables = {
@@ -150,50 +211,77 @@ class uncertaintyCalculator:
             'energy':['J','eV']}
 
         inputs_with_SI_units = {}
-        recognized_units = [item for sublist in list(kinds_of_variables.values()) for item in sublist]
+        recognized_units = [
+            item for sublist in list(
+                kinds_of_variables.values()) for item in sublist]
         dim_less = ['-',' ','']
         exception_units = ['°F','°C','°R','°Ra','MPa']
+        temperature_units = ['°F','°C','°R']
         power_units = {'m³':'m^3'}
 
+        dummies_in_labels = list()
         for label in input_dict:
             inputs_list = list()
+            set_zero_to_dummy = list()
             for t in range(len(input_dict[label])):
-                unit_list, is_simple_unit, in_denominator = self.get_simple_units(input_dict[label][t][1]) # in denominator refers to whether there is fahrenheit in denominator
+                # in denominator refers to whether
+                # there is fahrenheit in denominator
+                if input_dict[label][t][0] == 0 and input_dict[label][t][1] not in temperature_units:
+                    set_zero_to_dummy.append(True)
+                    input_dict[label][t][0] = 1
+                else: set_zero_to_dummy.append(False)
+                (unit_list,
+                is_simple_unit,
+                in_denominator) = self.get_simple_units(
+                    input_dict[label][t][1])
                 value = input_dict[label][t][0]
                 composite_unit_collecter = list()
                 composite_value_collecter = list()
                 for unit in unit_list:
-                    if not unit in recognized_units and not input_dict[label][t][1] in dim_less:
+                    if not unit in recognized_units and not input_dict[
+                        label][t][1] in dim_less:
                         if unit in power_units.keys():
                             for key in power_units.keys():
                                 if key == unit: unit = power_units[key]
                         else:
                             print('The input variable \''+label+
                                 '\' with units \''+input_dict[label][t][1]+
-                                '\' is not supported. Please use input variables with recognized units.')
+                                '\' is not supported. Please use input'+
+                                'variables with recognized units.')
 
                     for kind in kinds_of_variables:
-                        # Figure out what sort of variable label is and what its main SI/SI derived unit is.
+                        # Figure out what sort of variable label is
+                        # and what its main SI/SI derived unit is.
                         if unit in kinds_of_variables[kind]:
                             label_kind = kind
                             SI_unit = kinds_of_variables[kind][0]
-                            # Deal with units that are not in the sympy.physics.units module.
+                            # Deal with units that are not in the
+                            # sympy.physics.units module.
                             if unit == 'min' or unit == 'mins':
                                 unit = 'minutes'
                             if unit == 'tonn':
                                 unit = 'metric_ton'
                             if unit == '°F':
-                                value, unit = self.convert_temperature_to_kelvin(value,'F',addition=is_simple_unit)
-                                if is_simple_unit == True: 
-                                    if in_denominator == True: value = 1/value
+                                value, unit = self.convert_temperature_to_kelvin(
+                                    value,
+                                    'F',
+                                    addition=is_simple_unit)
+                                if is_simple_unit == True:
+                                    if in_denominator == True:
+                                        value = 1/value
                             if unit == '°C':
-                                value, unit = self.convert_temperature_to_kelvin(value,'C',addition=is_simple_unit)
+                                value, unit = self.convert_temperature_to_kelvin(
+                                    value,'C',
+                                    addition=is_simple_unit)
                             if unit == '°R' or unit == '°Ra':
-                                value, unit = self.convert_temperature_to_kelvin(value,'R')
+                                value, unit = self.convert_temperature_to_kelvin(
+                                    value,
+                                    'R')
                             if unit == 'MPa':
                                 value = 1000000*value
                                 unit = 'Pa'
-                            # If the unit is composite of powers of the same base only then one can get around composite units like so:
+                            # If the unit is composite of powers of the same
+                            # base only then one can get around composite units like so:
                             if label_kind == 'volume' or label_kind == 'area':
                                 if '^' in unit or '**' in unit:
                                     power_signs = ['^','**']
@@ -204,16 +292,21 @@ class uncertaintyCalculator:
                                             power = float(splitted[1])
                                             un_powered_unit = splitted[0]
                                             un_powered_SI_unit = SI_unit.split('^')[0]
-                                            un_powered_value_with_unit = (input_dict[label][t][0]**(1/power))*getattr(
+                                            un_powered_value_with_unit = (
+                                                input_dict[label][t][0]**(1/power))*getattr(
                                                 u, un_powered_unit)
                                             un_powered_new_value_with_unit = u.convert_to(
-                                                un_powered_value_with_unit, getattr(u, un_powered_SI_unit))
-                                            value = float(un_powered_new_value_with_unit.as_coeff_Mul()[0])**power
+                                                un_powered_value_with_unit, getattr(
+                                                    u, un_powered_SI_unit))
+                                            value = float(
+                                                un_powered_new_value_with_unit.as_coeff_Mul()[0])**power
                                             unit = (un_powered_new_value_with_unit.as_coeff_Mul()[1])**power
                                         except:
                                             fail = fail + 1
-                                            if fail > 1: 
-                                                print('Notation was not recognized. Please use \'^\' or \'**\' to represent powers in units, e.g., \'m^3\'.')
+                                            if fail > 1:
+                                                print('Notation was not recognized.'+
+                                                    'Please use \'^\' or \'**\' to represent'+
+                                                    'powers in units, e.g., \'m^3\'.')
                                 else:
                                     splitted = SI_unit.split('^')
                                     power = float(splitted[1]) # 3
@@ -228,8 +321,9 @@ class uncertaintyCalculator:
                                     if input_dict[label][t][1] in exception_units:
                                         value_with_unit = value*getattr(u,unit)
                                     else:
-                                        if not unit in dim_less: 
-                                            value_with_unit = input_dict[label][t][0]*getattr(u, unit) 
+                                        if not unit in dim_less:
+                                            value_with_unit = input_dict[label][t][0]*getattr(
+                                                u, unit)
                                         else:
                                             unit = ''
                                 else:
@@ -238,11 +332,13 @@ class uncertaintyCalculator:
                                     new_value_with_unit = u.convert_to(
                                         value_with_unit, getattr(u, SI_unit))
                                 if input_dict[label][t][0] == float(0):
-                                    value = 0
+                                    if not unit == 'K':
+                                        value = 0
+                                    else: value = value
                                 else:
-                                    if not unit in dim_less: 
+                                    if not unit in dim_less:
                                         value = float(new_value_with_unit.as_coeff_Mul()[0])
-                                if not unit in dim_less:
+                                if unit not in dim_less:
                                     unit = new_value_with_unit.as_coeff_Mul()[1]
                     if is_simple_unit == False:
                         composite_unit_collecter.append(unit)
@@ -250,12 +346,14 @@ class uncertaintyCalculator:
                         value = composite_value_collecter
                         unit = composite_unit_collecter
                     inputs_list.append([value,unit])
+            dummies_in_labels.append(set_zero_to_dummy)
             inputs_with_SI_units[label] = inputs_list # This is a nested list so inputs_list[t][0] = [val1,val2], inputs_list[t][0] = [unit1,unit2]
-        return inputs_with_SI_units
+        return inputs_with_SI_units, dummies_in_labels
 
     def SI_conversion(self,input_keys=None, output_key=None):
         """Potenial pitfall:
-            - Display units will need to be updated to handle all possible output units from convert_simple_units_to_SI."""
+            - Display units will need to be updated to handle all
+            possible output units from convert_simple_units_to_SI."""
 
         output_dict = {}
         display_units = {
@@ -289,10 +387,12 @@ class uncertaintyCalculator:
                     [[42,self.input_dictionary['out_var_unit']]]}
             else:
                 input_dict = self.input_dictionary[key]
-            simple_unit_dict = self.convert_simple_units_to_SI(
+            simple_unit_dict, zero_dummies = self.convert_simple_units_to_SI(
                 input_dict)
 
+            no = -1
             for var in simple_unit_dict:
+                no += 1
                 output_list = list()
                 for t in range(len(input_dict[var])):
                     result = input_dict[var][t][0]
@@ -302,26 +402,46 @@ class uncertaintyCalculator:
                             composite_unit)
                         part_no = 0
                         for part in simple_unit_dict[var][t][0]:
-                            factor = part/input_dict[var][t][0]
-                            if composite_unit.find('/') < composite_unit.find(old_units[part_no]):
+                            if part == 0 and input_dict[var][t][0] == 0:
+                                factor = 1
+                            else:
+                                factor = part/input_dict[var][t][0]
+                            if composite_unit.find(
+                                '/') < composite_unit.find(
+                                    old_units[part_no]):
+                                if factor == 0 and result == 0:
+                                    factor = 1
                                 result = result/factor
                             else:
                                 result = factor*result
                             composite_unit = composite_unit.replace(
                                 old_units[part_no],
                                 str(simple_unit_dict[var][t][1][part_no]))
+                            composite_unit = self.remove_outer_parentheses(composite_unit)
                             part_no = part_no + 1
 
                     else: composite_unit = simple_unit_dict[var][t][1]
                     for display_unit in display_units:
                         if not str(composite_unit) in recognized_units:
-                            print('The input variable \''+var+'\' with units \''+str(composite_unit)+'\' is not supported.')
+                            print('The input variable \''+var+
+                                '\' with units \''+str(composite_unit)+
+                                '\' is not supported.')
                         else:
                             if str(composite_unit) in display_units[display_unit]:
                                 if isinstance(simple_unit_dict[var][t][0],list):
-                                        output_list.append([result,display_units[display_unit][0]])
-                                else: output_list.append(
-                                    [simple_unit_dict[var][t][0],display_units[display_unit][0]])
+                                        if zero_dummies[no][t] == True:
+                                            output_list.append(
+                                                [0,display_units[display_unit][0]])
+                                        else: output_list.append(
+                                                [result,display_units[display_unit][0]])
+                                else:
+                                    if zero_dummies[no][t] == True:
+                                            output_list.append(
+                                                [0,display_units[display_unit][0]])
+                                    else:
+                                        output_list.append([simple_unit_dict[var][t][0],
+                                    display_units[display_unit][0]])
+
                 output_dict[var] = output_list.copy()
             if key != 'out_var_label':
                 self.input_dictionary[key] = output_dict.copy()
@@ -573,7 +693,10 @@ class uncertaintyCalculator:
             'input_quantities_dictionary']
         distributions = self.input_dictionary['probability_distributions']
         uncertainties = self.input_dictionary['input_uncertainties']
-        limits = self.input_dictionary['limits']
+        try:
+            limits = self.input_dictionary['limits']
+        except:
+            limits = [None,None]
         draws = self.input_dictionary['monte_carlo_draws']
 
         if 'list_correlation_matrix' in self.input_dictionary:
@@ -608,11 +731,18 @@ class uncertaintyCalculator:
                     unc = 0.00000001
                 if pd.isna(unc) == True:
                     unc = 0.00000001
-                input_var = self.draw(
-                    limits[label][t],
-                    input_quantities_dictionary[label][t][0],
-                    unc,
-                    distributions[label][t])
+                if limits == [None,None]:
+                    input_var = self.draw(
+                        limits,
+                        input_quantities_dictionary[label][t][0],
+                        unc,
+                        distributions[label][t])
+                else:
+                    input_var = self.draw(
+                        limits[label][t],
+                        input_quantities_dictionary[label][t][0],
+                        unc,
+                        distributions[label][t])
 
                 mc_sims.append(input_var)
 
@@ -810,7 +940,8 @@ class uncertaintyCalculator:
         factor = coverage_factors[distribution.lower()].iloc[idx]
         if np.isnan(factor):
             raise Exception(
-                'This {} distribution is not supported.'.format(distribution))
+                'This {} distribution is not supported with this'+
+                'level of confidence.'.format(distribution))
         else:
             if uncertainty[1].strip() != '%':
                 return [
@@ -822,33 +953,44 @@ class uncertaintyCalculator:
                     quantity[1]]
 
     def calculate_standard_uncertainty(self):
-
         standard_uncertainties = {}
         expanded_k2_uncertainties = {}
-        labels_and_units = self.input_dictionary['labels_and_units']
-        allowed_distributions = ['normal','rectangular','triangular']
-        confidences = self.input_dictionary['confidences']
-        distributions = self.input_dictionary['probability_distributions']
-        input_uncertainties = self.input_dictionary['input_uncertainties']
-        quantities = self.input_dictionary['input_quantities_dictionary']
 
-        time_points = len(confidences[list(confidences.keys())[0]])
-        for elm_no in range(len(labels_and_units)):
-            elm = labels_and_units[elm_no].split('|')
-            standard_uncertainties[elm[0]] = []
-            expanded_k2_uncertainties[elm[0]] = []
-            for t in range(time_points):
-                if distributions[elm[0]][t].lower() in allowed_distributions:
-                    std_unc = self.get_standard_uncertainty_from_distribution(
-                        distributions[elm[0]][t],
-                        confidences[elm[0]][t],
-                        input_uncertainties[elm[0]][t],
-                        quantities[elm[0]][t])
-                    standard_uncertainties[elm[0]].append(std_unc)
-                    expanded_k2_uncertainties[elm[0]].append(2*std_unc)
-                else: raise Exception (
-                        '{} is not a supported distribution'.format(
-                        distributions[elm[0]][t]))
+        if self.input_dictionary['computation_method'] == 'external_montecarlo':
+            for key in self.input_dictionary['input_quantities_dictionary']:
+                #if bool(self.nominal_input_montecarlo) == False:
+                standard_uncertainties[key] = self.input_dictionary[
+                    'input_quantities_dictionary'][key].std(axis=1)
+                expanded_k2_uncertainties[key] = 2*standard_uncertainties[key]
+                #else:
+                #    standard_uncertainties[key] = 0
+                #    expanded_k2_uncertainties[key] = 0
+        else:
+
+            labels_and_units = self.input_dictionary['labels_and_units']
+            allowed_distributions = ['normal','rectangular','triangular']
+            confidences = self.input_dictionary['confidences']
+            distributions = self.input_dictionary['probability_distributions']
+            input_uncertainties = self.input_dictionary['input_uncertainties']
+            quantities = self.input_dictionary['input_quantities_dictionary']
+
+            time_points = len(confidences[list(confidences.keys())[0]])
+            for elm_no in range(len(labels_and_units)):
+                elm = labels_and_units[elm_no].split('|')
+                standard_uncertainties[elm[0]] = []
+                expanded_k2_uncertainties[elm[0]] = []
+                for t in range(time_points):
+                    if distributions[elm[0]][t].lower() in allowed_distributions:
+                        std_unc = self.get_standard_uncertainty_from_distribution(
+                            distributions[elm[0]][t],
+                            confidences[elm[0]][t],
+                            input_uncertainties[elm[0]][t],
+                            quantities[elm[0]][t])
+                        standard_uncertainties[elm[0]].append(std_unc)
+                        expanded_k2_uncertainties[elm[0]].append(2*std_unc)
+                    else: raise Exception (
+                            '{} is not a supported distribution'.format(
+                            distributions[elm[0]][t]))
 
         self.partial_analysis_results[
             'standard_uncertainty'] = standard_uncertainties
@@ -862,7 +1004,7 @@ class uncertaintyCalculator:
         correlation_term = list()
         sensitivity_coeff = [a*b for a,b in zip(
             partial_derivatives,standard_uncertainties)]
-        if corr_matrix != None:
+        if sum(corr_matrix) != 0:
             counter = 0
             for i in range(len(labels)-1):
                 for j in range(len(labels)-1):
@@ -899,24 +1041,101 @@ class uncertaintyCalculator:
         return corr_matrix
 
     def perform_uncertainty_analysis(self):
+        """Partial derivatives are computed if computation_method
+        is "analytical" or "numerical".
+
+        If computation_method is ucalc_montecarlo, distributions are
+        drawn according to the input uncertainties.
+
+        If computation method is external_montecarlo, the uncertainty
+        is calculated based on distributions that are input to
+        uncertaintyCalculator."""
+
+        # Get computation method
         computation_method = self.input_dictionary[
             'computation_method']
 
+        # Compute partial derivatives or get the
+        # montecarlo distributions.
         if computation_method == "analytical":
             self.analytical()
         elif computation_method == "numerical":
             self.numerical()
-        elif computation_method == 'lhs_montecarlo':
+        elif computation_method == 'ucalc_montecarlo':
             (monte_carlo_vectors,
             out_correlation_matrices) = self.lhs_monte_carlo()
+        elif computation_method == 'external_montecarlo':
+            (monte_carlo_vectors,
+            out_correlation_matrices) = self.format_input_mcs()
 
-        if 'montecarlo' in computation_method:
-            self.store_montecarlo_analysis_results(
-                monte_carlo_vectors, out_correlation_matrices)
-        else:
-            self.store_analytical_or_numerical_results()
+        # 
+        if 'ucalc_montecarlo' in computation_method or (
+            'external_montecarlo' in computation_method):
+            self.get_montecarlo_analysis_results(
+                monte_carlo_vectors,
+                out_correlation_matrices,
+                computation_method)
+        elif 'analytical' in computation_method or (
+            'numerical' in computation_method):
+            self.get_analytical_or_numerical_results()
 
-    def store_analytical_or_numerical_results(self):
+    def format_input_mcs(self):
+        """Prepare the inputted montecarlo draws for unc analysis."""
+
+        monte_carlo_vectors = list()
+
+        input_vars = self.input_dictionary['input_quantities_dictionary']
+
+        for key in input_vars.keys():
+            # Find data frames with only one column and duplicate to match no of mc draws.
+            n = self.input_dictionary['monte_carlo_draws']
+            var = input_vars[key]
+            if not isinstance(var,pd.DataFrame):
+                var = pd.DataFrame(var)
+            if len(var.columns) == 1:
+                var = var[var.columns.repeat(n)]
+                var.columns = [key+'_'+str(i) for i in range(n)]
+            input_vars[key] = var
+
+        # Loop through montecarlo draws.
+        # Create new data frame for each column.
+        for i in range(n):
+            df = pd.DataFrame()
+            for key in input_vars.keys():
+                df[key] = input_vars[key].iloc[:,i]
+            monte_carlo_vectors.append(df)
+
+        """for _ in range(len(df)):
+            # For each time point, compute the correlations between variables.
+            correlations = list()
+            accounted_for = list()
+            for col in df.columns:
+                accounted_for.append(col)
+                for cl in df.columns:
+                    if cl not in accounted_for:
+                        lst = [col,cl]
+                        # Set forbidden correlations to zero.
+                        if lst in forbidden_correlations or list(
+                            reversed(lst)) in forbidden_correlations:
+                            correlations.append(0)
+                        else:
+                            corr1 = list()
+                            corr2 = list()
+                            for i in range(len(monte_carlo_vectors)):
+                                corr1.append(monte_carlo_vectors[i][col][0])
+                                corr2.append(monte_carlo_vectors[i][cl][0])
+                            co = pd.Series(corr1).corr(pd.Series(corr2))
+                            if np.isnan(co):
+                                co = 0
+                            correlations.append(co)
+            out_correlation_matrices.append(correlations)
+
+        # Compare the correlations to the ideal correlation matrix.
+        # self.input_dictionary['list_correlation_matrix']"""
+
+        return monte_carlo_vectors, self.input_dictionary['list_correlation_matrix']
+
+    def get_analytical_or_numerical_results(self):
 
         inputs_df = self.add_input_sheet_time_series()
         outputs_df = self.add_output_sheet_time_series()
@@ -930,8 +1149,10 @@ class uncertaintyCalculator:
         confidences = self.input_dictionary['confidences']
         distributions = self.input_dictionary['probability_distributions']
         exp_unc = self.partial_analysis_results['normal_k=2_uncertainty']
-        if 'time_stamps' in self.input_dictionary.keys(): time_stamps = self.input_dictionary['time_stamps']
-        else: time_stamps = pd.DataFrame()
+        if 'time_stamps' in self.input_dictionary.keys():
+            time_stamps = self.input_dictionary['time_stamps']
+        else:
+            time_stamps = pd.DataFrame()
 
         corr_matrix = self.input_dictionary['list_correlation_matrix']
         partial_derivatives = self.partial_analysis_results['partial_derivatives']
@@ -942,7 +1163,7 @@ class uncertaintyCalculator:
         for var in list(input_quantities_dictionary.values()):
             input_units.append(var[0][1])
 
-        # Initializations.
+        # Preparing data frames that will eventually be written to excel.
         input_uncertainty_df = pd.DataFrame(columns=keys)
         confidences_df = pd.DataFrame(columns=keys)
         distributions_df = pd.DataFrame(columns=keys)
@@ -1009,23 +1230,45 @@ class uncertaintyCalculator:
         self.partial_analysis_results['correlation_matrix'] = corr_matrix
         correlation_matrix_df = self.add_correlations_sheet()
 
-        # Store in uncertainty calculator object.
-        self.analysis_results['output_values'] = values_df
-        self.analysis_results['output_std_comb_uncertainties'] = standard_combined_uncertainties_df
-        self.analysis_results['output_std_comb_rel_uncertainties'] = standard_rel_combined_uncertainties_df
-        self.analysis_results['input_uncertainties'] = input_uncertainty_df
-        self.analysis_results['input_uncertainty_confidences'] = confidences_df
-        self.analysis_results['input_uncertainty_distributions'] = distributions_df
-        self.analysis_results['formulae_for_sensitivity_coeff'] = formula_for_sensitivity_coeff_df
-        self.analysis_results['sensitivity_coefficients'] = sensitivity_coeff_df
-        self.analysis_results['squared_contribution'] = squared_contribution_df
-        self.analysis_results['correlation_matrix'] = correlation_matrix_df
+        # Store the filled data frames on the uncertaintyCalculator object.
+        self.analysis_results[
+            'output_values'] = values_df
+        self.analysis_results[
+            'output_std_comb_uncertainties'] = standard_combined_uncertainties_df
+        self.analysis_results[
+            'output_std_comb_rel_uncertainties'] = standard_rel_combined_uncertainties_df
+        self.analysis_results[
+            'input_uncertainties'] = input_uncertainty_df
+        self.analysis_results[
+            'input_uncertainty_confidences'] = confidences_df
+        self.analysis_results[
+            'input_uncertainty_distributions'] = distributions_df
+        self.analysis_results[
+            'formulae_for_sensitivity_coeff'] = formula_for_sensitivity_coeff_df
+        self.analysis_results[
+            'sensitivity_coefficients'] = sensitivity_coeff_df
+        self.analysis_results[
+            'squared_contribution'] = squared_contribution_df
+        self.analysis_results[
+            'correlation_matrix'] = correlation_matrix_df
 
+        # Lists of sheet names and sheets are created in preparation for
+        # output to excel. The lists are stored on uncertaintyCalculator.
+        # The number of sheets and how the information will be displayed
+        # depends on whether the input data has a time dimension.
         if 'time_stamps' in self.input_dictionary:
             self.sheet_names = [
-                'inputs','outputs','values','uncertainties','rel_uncertainties',
-                'input_uncertainties','input_uncertainty_confidences','input_uncertainty_distributions',
-                'formula_sens_coeff','sens_coeff','squared_contribution',
+                'inputs',
+                'outputs',
+                'values',
+                'std_uncertainties',
+                'std_rel_uncertainties',
+                'input_uncertainties',
+                'input_uncertainty_confidences',
+                'input_uncertainty_distributions',
+                'formula_sens_coeff',
+                'sens_coeff',
+                'squared_contribution',
                 'correlation_matrix']
             self.out_frames = [
                 inputs_df,
@@ -1058,85 +1301,136 @@ class uncertaintyCalculator:
                 computation_method,
                 partial_derivatives=sensitivity_coeff_df.iloc[0,:].to_list(),
                 partial_expressions=formula_for_sensitivity_coeff_df.iloc[0,:].to_list(),
-                correlation_term = correlation_term, square=square)
+                correlation_term = correlation_term,
+                square=square)
 
             self.out_frames = [inputs, outputs, correlation_matrix_df]
             self.sheet_names = sheet_names
 
-    def montecarlo_sensitivity_coeffs(self,monte_carlos,input_uncertainty_df, draws=None):
-        if not draws is None:
-            self.montecarlo_sensitivity_draws = draws
-        if len(monte_carlos[0]) < self.montecarlo_sensitivity_draws:
-            self.montecarlo_sensitivity_draws = len(monte_carlos[0])
+    def montecarlo_sensitivity_coeffs(self,computation_method):
+        """Computes sensitivity coefficients based on nominal evaluation
+        of the functional relationship, then varying each variable in the
+        functional relationship to find the effect each variable has on the
+        output of the functional relationship."""
 
+        # Get functional relationship
         functional_relationship = self.input_dictionary[
             'functional_relationship']
 
-        labels = list()
-        for elm in self.input_dictionary['labels_and_units']:
-            labels.append(elm.split('|')[0])
-        sensitivity_coeff_df = pd.DataFrame(
-            columns=labels,
-            index=range(len(monte_carlos)))
+        # Get parameters and initiate sens.coeff_df. (cols=labels, rows=mc draws)
+        # ['par1','par2',...]
+        parameters = list(
+            self.input_dictionary['input_quantities_dictionary'].keys())
 
-        # monte_carlos is a list of data frames,
-        # one list per time point.
-        standard_deviations = pd.DataFrame(columns=labels,
-                                        index = ['OAT'])
-        standard_dev = pd.DataFrame(columns=labels,
-                                        index = ['inp'])
-        self.mc_stdevs = pd.DataFrame(columns=labels)
-        for t in range(len(monte_carlos)):
-            nominal_values = pd.DataFrame(columns=labels)
-            monte_carlos_t = monte_carlos[
-                t][
-                    monte_carlos[t].columns[:-1]].iloc[
-                        :self.montecarlo_sensitivity_draws,:]
-            nominal_list = list()
-            for var in range(len(monte_carlos_t.columns)):
-                nominal_list.append(
-                    self.input_dictionary[
-                        'input_quantities_dictionary'][
-                            labels[var]][t][0])
-            #nominal_values.loc[0,:] = nominal_list
-            nominal_values = pd.concat([nominal_values,
-                                        pd.DataFrame([nominal_list]*self.montecarlo_sensitivity_draws,
-                                                    columns=labels)],
-                                                    axis=0)
+        if computation_method == 'external_montecarlo':
+            nominal_input_parameters = self.nominal_input_parameters
+            the_df_dict = self.input_dictionary['input_quantities_dictionary']
+        if computation_method == 'ucalc_montecarlo':
+            nominal_input_parameters = {}
+            for parameter in parameters:
+                dt = np.array(
+                        self.input_dictionary['input_quantities_dictionary'][parameter])
+                dt = dt[:,0]
+                dt = dt.astype(np.float)
+                nominal_input_parameters[parameter] = pd.DataFrame(
+                    data = dt,
+                    columns = [parameter])
 
-            # We now have a data frame that contains nominal
-            # values montecarlo_sensitivity_draws times.
-            # For each variable, switch it out one at a time
-            # with the corresponding variable from monte_carlos.
-            for var in labels:
-                calculation_df = nominal_values.copy()
-                calculation_df[var] = monte_carlos_t[var]
-                # Now compute the OAT stdev, and var stdev and find the sensitivity coefficient.
-                # For each row in montecarlo_vectors calculate output.
-                for row_n in range(len(calculation_df)):
-                    vals = calculation_df.loc[row_n].tolist()
-                    input_quantities = dict(zip(monte_carlos_t.columns.to_list(),vals))
-                    calculation_df.at[row_n,self.input_dictionary['out_var_label']] = self.compute_exprs(
-                        functional_relationship,input_quantities)
+                restack = self.ucalc_mc_vectors[0].to_numpy()
+                for mc in range(len(self.ucalc_mc_vectors)-1):
+                    restack = np.stack((restack,self.ucalc_mc_vectors[mc+1].to_numpy()))
+                frames = []
+                for vr in range(restack.shape[2]):
+                    df = pd.DataFrame(restack[:,:,vr],
+                                    columns = [i for i in range(restack.shape[1])])
+                    frames.append(df)
+                the_df_dict = dict(zip(parameters,frames))
 
-                if (input_uncertainty_df[var] == 0).all():
-                    standard_deviations.loc['OAT',var] = 0
-                    standard_dev.loc['inp',var] = 1
-                else:
-                    standard_deviations.loc['OAT',var] = calculation_df[self.input_dictionary['out_var_label']].std()
-                    standard_dev.loc['inp',var] = calculation_df[var].std()
-            sensitivity_coeff = (standard_deviations.loc['OAT']/standard_dev.loc['inp']).tolist()
-            self.mc_stdevs.loc[t,:] = standard_dev.values.tolist()[0]
-            sensitivity_coeff_df.loc[t,:] = sensitivity_coeff
+        # Get standard deviations of input parameters.
+        std_devs = []
+        inputs = []
+        # self.nominal_input_parameters (a dictionary, with variables as keys)
+        # can probably be swapped for the
+        # variable values input in the internal_montecarlo case.
+        # entries are data frames or series. (colname is var name, rows are time )
+        for parameter in parameters:
+            # Add the standard deviation from all draws per time point.
+            # the_df_dict contains dataframes with draws in columns and time in rows.
+            std_devs.append(the_df_dict[parameter].std(axis=1))
+
+            try:
+                inputs.append([i[0] for i in nominal_input_parameters[parameter].values])
+            except:
+                # Sometimes it is not a data frame but a pd.Series
+                inputs.append(nominal_input_parameters[parameter].to_list())
+            # Set very small values to zero. At this point
+            # the standard deviation is so small that it can't be
+            # distinguished from zero anyway as the computational error
+            # is probably bigger.
+            std_devs[-1][std_devs[-1] < 1e-10] = 0
+        # Get the nominal results.
+        nominal_result = []
+        new_results_big_list = []
+        # For each time point.
+        for t in range(len(nominal_input_parameters[parameters[0]])):
+            dict_entries = []
+            for parameter in parameters:
+                try:
+                    dict_entries.append(
+                        nominal_input_parameters[parameter].iloc[
+                            t].values[0])
+                except:
+                    # sometimes it is a pd.Series.
+                    dict_entries.append(
+                        nominal_input_parameters[parameter][t])
+            nominal_dict = dict(zip(parameters,dict_entries))
+            nominal_result.append(
+                self.compute_exprs(functional_relationship,nominal_dict))
+
+            # For each variable in the functional relationship,
+            # add a standard deviation, to re-compute the result.
+            new_results = []
+            for par_no in range(len(parameters)):
+                new_dict_entry = dict_entries.copy()
+                std_dev = std_devs[par_no].iloc[t]
+                new_dict_entry[par_no] = dict_entries[par_no] + std_dev
+                new_dict = dict(zip(parameters,new_dict_entry))
+                new_results.append(
+                    self.compute_exprs(functional_relationship,new_dict))
+            new_results_big_list.append(new_results)
+
+        # Make data frames of the lists with nominal and new results.
+        # Find the difference between the nominal result and the
+        # re-computed result.
+        standard_dev = pd.DataFrame(std_devs).transpose()
+        standard_dev.columns = parameters
+        inputs_df = pd.DataFrame(inputs).transpose()
+        inputs_df.columns = parameters
+        new_result = pd.DataFrame(columns=parameters,data=new_results_big_list)
+        nominal_result = pd.Series(nominal_result)
+        results_difference = new_result.sub(nominal_result,axis=0) # Absolute??
+        # Divide change in variable y by change in variable x
+        # to get absolute sensitivity coefficient.
+        sensitivity_coeff_df = results_difference/standard_dev
+        # Just catching impossible values. If zero-output, something is wrong.
+        sensitivity_coeff_df.replace([np.inf, -np.inf], 0, inplace=True)
+        # Then multiply by x to get the contribution in units of y.
+        # Divide by y to get the contribution in relative terms.
+
+        sensitivity_coeff_rel = (inputs_df/new_result)*sensitivity_coeff_df
+
 
         if 'time_stamps' in self.input_dictionary:
-            sensitivity_coeff_df = pd.concat((self.input_dictionary['time_stamps'],sensitivity_coeff_df),axis=1)
-        return sensitivity_coeff_df
+            sensitivity_coeff_rel = pd.concat(
+                (self.input_dictionary['time_stamps'],sensitivity_coeff_rel)
+                ,axis=1)
+        return sensitivity_coeff_rel
 
-    def store_montecarlo_analysis_results(
+    def get_montecarlo_analysis_results(
             self,
             montecarlo_vectors,
-            out_correlation_matrix):
+            out_correlation_matrix,
+            computation_method):
         """ """
 
         inputs_df = self.add_input_sheet_time_series()
@@ -1145,7 +1439,6 @@ class uncertaintyCalculator:
         # Initializing lists that will go to output data frames.
         values = list()
         std_combined_uncertainty = list()
-        standard_rel_uncertainty = list()
         coverage_interval = list()
 
         # Getting necessary information from the
@@ -1166,7 +1459,6 @@ class uncertaintyCalculator:
             time_stamps = self.input_dictionary['time_stamps']
         else: time_stamps = pd.DataFrame()
 
-        t = 0
         for frame_t in montecarlo_vectors:
             frame_t[out_var_label] = ""
             # For each row in montecarlo_vectors calculate output.
@@ -1179,28 +1471,102 @@ class uncertaintyCalculator:
                     functional_relationship,
                     input_quantities)
 
-            # This needs to go to the output data frame.
-            output_value = frame_t[out_var_label].mean()
-            std_unc = frame_t[out_var_label].std()
-            values.append(output_value)
-            std_combined_uncertainty.append(
-                std_unc)
-            standard_rel_uncertainty.append(
-                std_unc/output_value)
-            quantiles = frame_t[out_var_label].quantile(
-                [0.025,0.975])
-            coverage_interval.append(
-                str(output_value-quantiles.iloc[0])+' - '+str(output_value+quantiles.iloc[1]))
+        # Save to output data frame.
+        quantiles = list()
+        if computation_method == 'ucalc_montecarlo':
+            self.ucalc_mc_vectors = montecarlo_vectors.copy()
+            cols = list(montecarlo_vectors[0].columns)
+            # Fix the format of the montecarlo vectors.
+            # The montecarlo vectors should be lists of data frames, one frame for each draw.
+            # Variables as columns, time in rows.
+            restack = montecarlo_vectors[0].to_numpy()
+            for t in range(len(montecarlo_vectors)-1):
+                restack = np.stack((restack,montecarlo_vectors[t+1].to_numpy()))
+            montecarlo_vectors = []
+            for mc in range(restack.shape[1]):
+                df = pd.DataFrame(restack[:,mc,:],columns = cols)
+                montecarlo_vectors.append(df)
 
-            t = t + 1
+        for t in range(len(montecarlo_vectors[0])):
+            out_vals_mc = list()
+            for mc in montecarlo_vectors:
+                out_vals_mc.append(mc[out_var_label][t])
+            out_series = pd.Series(out_vals_mc)
+            values.append(out_series.mean())
+            std_combined_uncertainty.append(out_series.std())
+            quantiles.append([out_series.quantile(.025),out_series.quantile(.975)])
+        standard_rel_uncertainty = [
+            std_combined_uncertainty[i]/values[i] for i in range(len(values))]
+        coverage_interval = [
+            str(quantiles[i][0])+
+            ' - '+
+            str(quantiles[i][1]) for i in range(len(values))]
+
+        """
+        # If relevant add the quantity uncertainty contribution as a square sum
+        # to the output uncertainty, and update quantiles. TODO: I don't understand this. Fix it.
+        if computation_method == 'external_montecarlo':
+            coverage_interval = pd.DataFrame() # Empty, since we're doing a hybrid external_montecarlo version.
+            if 'quantity' in functional_relationship: # TODO: magic string.
+                if bool(self.nominal_input_montecarlo) == True:
+                    rel_quant_unc = np.zeros(len(self.input_dictionary['confidences']['quantity']))
+                    abs_quant_unc = rel_quant_unc.copy()
+                    standard_rel_uncertainty = [
+                        np.sqrt(a**2 + b**2) for a,b in zip(
+                            rel_quant_unc,standard_rel_uncertainty)]
+                    std_combined_uncertainty = [
+                        a*b for a,b in zip(standard_rel_uncertainty,values)]
+                    for n in range(len(
+                        input_uncertainties['quantity'])):
+                        input_uncertainties['quantity'][n][0] = 0
+
+                else:
+                    if all(i == 0.6827 for i in self.input_dictionary['confidences']['quantity']):
+                        abs_quant_unc = [i[0] for i in input_uncertainties['quantity']]
+                    elif all(i == 0.9545 for i in self.input_dictionary['confidences']['quantity']):
+                        abs_quant_unc = [i[0]/2 for i in input_uncertainties['quantity']]
+                    elif all(i == 0.99973 for i in self.input_dictionary['confidences']['quantity']):
+                        abs_quant_unc = [i[0]/3 for i in input_uncertainties['quantity']]
+                    else: raise Exception('Cannot convert to standard uncertainty. Fix code.')
+                    quant = input_quantities_dictionary['quantity'].iloc[:,0].to_list()
+                    rel_quant_unc = [a/b for a,b in zip(abs_quant_unc, quant)]
+                    standard_rel_uncertainty = [
+                        np.sqrt(a**2 + b**2) for a,b in zip(
+                            rel_quant_unc,standard_rel_uncertainty)]
+                    std_combined_uncertainty = [
+                        a*b for a,b in zip(standard_rel_uncertainty,values)]
+
+            if 'P' in functional_relationship: # TODO: magic strings here. what to do?
+                if bool(self.nominal_input_montecarlo) == True:
+                    for n in range(len(
+                        input_uncertainties['P'])):
+                        input_uncertainties['P'][n][0] = 0
+                else:
+                    for n in range(len(
+                        self.partial_analysis_results['standard_uncertainty']['P'])):
+                        input_uncertainties['P'][n][0] = self.partial_analysis_results[
+                            'standard_uncertainty']['P'].iloc[n]
+            if 'T' in functional_relationship:
+                if bool(self.nominal_input_montecarlo) == True:
+                    for n in range(len(
+                        input_uncertainties['T'])):
+                        input_uncertainties['T'][n][0] = 0
+                else:
+                    for n in range(len(
+                        self.partial_analysis_results['standard_uncertainty']['T'])):
+                        input_uncertainties['T'][n][0] = self.partial_analysis_results[
+                            'standard_uncertainty']['T'].iloc[n]
+        """
 
         values_df = pd.DataFrame({out_var_label:values})
         standard_combined_uncertainties_df = pd.DataFrame(
             {out_var_label:std_combined_uncertainty})
         standard_rel_combined_uncertainties_df = pd.DataFrame(
             {out_var_label:standard_rel_uncertainty})
-        coverage_interval_df = pd.DataFrame(
-            {out_var_label:coverage_interval})
+        try:
+            coverage_interval_df = pd.DataFrame(
+                {out_var_label:coverage_interval})
+        except:coverage_interval_df =coverage_interval
 
         keys = list(input_quantities_dictionary.keys())
         input_uncertainty_df = pd.DataFrame(columns=keys)
@@ -1226,10 +1592,12 @@ class uncertaintyCalculator:
         absolute = pd.DataFrame(
             {'Abs_'+out_var_label:len(values_df)*[True]})
 
-        coverage_interval_df = pd.concat(
-            [time_stamps,
-            coverage_interval_df],
-            axis=1)
+        try:
+            coverage_interval_df = pd.concat(
+                [time_stamps,
+                coverage_interval_df],
+                axis=1)
+        except: coverage_interval_df = coverage_interval_df
         standard_combined_uncertainties_df = pd.concat(
             [time_stamps,
             absolute,
@@ -1247,20 +1615,35 @@ class uncertaintyCalculator:
             axis=1)
 
         # Correlation matrix
-        matrix_list = list()
-        for t in range(len(out_correlation_matrix)):
-            vals = list()
-            for i in range(len(out_correlation_matrix[t]-1)):
-                vals.append(out_correlation_matrix[
-                    t][i][i+1:].tolist())
-            matrix_list.append([
-                item for sublist in vals for item in sublist])
-        self.partial_analysis_results[
-            'correlation_matrix'] = matrix_list
-        correlation_matrix_df = self.add_correlations_sheet()
+        if  not 'time_stamps' in self.input_dictionary.keys():
+            time_stamps = pd.DataFrame()
+        if computation_method == 'external_montecarlo':
+            correlation_matrix_df = pd.DataFrame(np.array(out_correlation_matrix))
+            col_list = list()
+            combi = list()
+            for label in input_quantities.keys():
+                for next_label in input_quantities.keys():
+                    if not label == next_label and [next_label,label] not in combi:
+                        col_list.append('R('+label+','+next_label+')')
+                        combi.append([label,next_label])
+            correlation_matrix_df.columns = col_list
+            correlation_matrix_df = pd.concat([time_stamps, correlation_matrix_df],axis=1)
+        else:
+            matrix_list = list()
+            for t in range(len(out_correlation_matrix)):
+                vals = list()
+                for i in range(len(out_correlation_matrix[t]-1)):
+                    vals.append(out_correlation_matrix[
+                        t][i][i+1:].tolist())
+                matrix_list.append([
+                    item for sublist in vals for item in sublist])
+            self.partial_analysis_results[
+                'correlation_matrix'] = matrix_list
+            correlation_matrix_df = self.add_correlations_sheet()
 
-        sensitivity_coefficients_df = self.montecarlo_sensitivity_coeffs(
-            montecarlo_vectors,input_uncertainty_df)
+        #if bool(self.nominal_input_montecarlo) == False:
+        sensitivity_coefficients_df = self.montecarlo_sensitivity_coeffs(computation_method)
+        #else: sensitivity_coefficients_df = pd.DataFrame()
 
         # Store analysis results to the uncertainty calculator object.
         # Store in uncertainty calculator object.
@@ -1366,40 +1749,75 @@ class uncertaintyCalculator:
         self.partial_analysis_results['partial_derivatives'] = partial_derivatives
         self.partial_analysis_results['partial_expressions'] = partial_expressions
 
-    ## TODO some trouble with swapping variables for values when variables contain substrings of other variables.
     def numerical(self):
+        """Performing partial derivation numerically."""
 
-        input_quantities_dictionary = self.input_dictionary['input_quantities_dictionary']
-        functional_relationship = self.input_dictionary['functional_relationship']
-        standard_uncertainties = self.partial_analysis_results['standard_uncertainty']
+        # Get input quantities, uncertainties, and
+        # the expression to be differentiated.
+        input_quantities_dictionary = self.input_dictionary[
+            'input_quantities_dictionary']
+        functional_relationship = self.input_dictionary[
+            'functional_relationship']
+        standard_uncertainties = self.partial_analysis_results[
+            'standard_uncertainty']
 
         partial_derivatives = list()
         partial_expressions = list()
 
         keys = list(input_quantities_dictionary.keys())
 
-        # Put brackets around every key in functional relationship, starting with the longest keys.
+        # Put brackets around every key in functional relationship,
+        # starting with the shortest keys.
         keys_sorted_by_length = sorted(keys,key=len)
-        keys_sorted_by_length = keys_sorted_by_length[::-1]
-        ## TODO some trouble with swapping variables for values when variables contain substrings of other variables.
+        #keys_sorted_by_length = keys_sorted_by_length[::-1]
+
+        exclude = keys_sorted_by_length.copy()
         for key in keys_sorted_by_length:
-            functional_relationship = functional_relationship.replace(key,'('+key+')')
+            exclude = exclude[1:]
+            # Define a dictionary to handle replacements
+            replacement = {key: '('+key+')'}
+
+            functional_relationship = self.custom_replace(
+                functional_relationship,
+                replacement,
+                exclude)
+
+        # For each variable in the expression to be differentiated:
         for a in range(len(keys)):
             partial_ders = list()
             partial_exprs = list()
 
             for t in range(len(list(input_quantities_dictionary.values())[0])):
                 vals = list()
+                # Get the values for each time point.
                 for b in range(len(keys)):
                     vals.append(list(input_quantities_dictionary.values())[b][t][0])
                 input_quantities = dict(zip(keys,vals))
+                # If the uncertainty is zero, substitute with a very small
+                # number to avoid dividing by zero at any point. This will
+                # marginally increase the final uncertainty estimate, keeping
+                # it concervative.
                 if standard_uncertainties[keys[a]][t][0] == float(0):
-                    standard_uncertainties[keys[a]][t][0] = 0.000000001
+                    standard_uncertainties[keys[a]][t][0] = 0.0000000000001
 
-                add_unc = functional_relationship.replace("("+keys[a]+")","("+keys[a]+"+"+str(standard_uncertainties[keys[a]][t][0])+")")
-                sub_unc = functional_relationship.replace("("+keys[a]+")","("+keys[a]+"-"+str(standard_uncertainties[keys[a]][t][0])+")")
+                # Then take the current variable (a), and add and subtract the
+                # the associated uncertainty (a number, formatted as string)
+                # with its associated uncertainty.
+                add_unc = functional_relationship.replace(
+                    "("+keys[a]+")",
+                    "("+keys[a]+"+"+str(standard_uncertainties[keys[a]][t][0])+")")
+                sub_unc = functional_relationship.replace(
+                    "("+keys[a]+")",
+                    "("+keys[a]+"-"+str(standard_uncertainties[keys[a]][t][0])+")")
 
-                partialExp = "(("+add_unc+")-("+sub_unc+"))/(2*"+str(standard_uncertainties[keys[a]][t][0])+")"
+                # Evaluate the partial derivative of the variable a.
+                # If the functional relationship is '(V1+V2)*rho',
+                # the partial derivative with respect to V1 becomes:
+                # ((((V1+0.015306122448979597) + (V2))*(rho))-
+                # (((V1-0.015306122448979597) + (V2))*(rho)))/(2*0.015306122448979597)'
+                # Where the decimal numbers refer to the uncertainty.
+                partialExp = "(("+add_unc+")-("+sub_unc+"))/(2*"+str(
+                    standard_uncertainties[keys[a]][t][0])+")"
                 partial_ders.append(self.compute_exprs(partialExp,input_quantities))
                 partial_exprs.append(partialExp)
             partial_derivatives.append(partial_ders)
@@ -1407,7 +1825,42 @@ class uncertaintyCalculator:
         self.partial_analysis_results['partial_derivatives'] = partial_derivatives
         self.partial_analysis_results['partial_expressions'] = partial_expressions
 
-    def output_to_excel(self, path, filename):
+    def generate_random_string(self, forbidden_substrings):
+        """Generate a random string of the specified length,
+        not containing the forbidden substrings."""
+
+        random_string = ''.join(random.choices(string.ascii_lowercase, k=50))
+        for pattern in forbidden_substrings:
+            random_string = random_string.replace(pattern,"")
+        return random_string
+
+    def custom_replace(self, expression, replacement, forbidden_patterns):
+
+        forbidden_patterns = forbidden_patterns.copy()
+        forbidden_patterns.reverse()
+        substitutions = {}
+        for pattern in forbidden_patterns:
+            if list(replacement.keys())[0] in pattern:
+                new_string = self.generate_random_string(forbidden_patterns)
+                substitutions[new_string] = pattern
+                expression = expression.replace(pattern,new_string)
+        for key in replacement.keys():
+            expression = expression.replace(key,replacement[key])
+
+        for key in substitutions.keys():
+            expression = expression.replace(key,substitutions[key])
+
+        return expression
+
+    def output_to_excel(self, path, filename,output_quantity='',folder_prefix=''):
+
+        folder = os.path.join(path,folder_prefix+filename.split('.')[0])
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        path = os.path.join(path,folder)
+
+        out_file_name = filename.split('.')[0] + '_' + output_quantity
+
         data_frames = self.out_frames
         sheet_names = self.sheet_names
 
@@ -1420,19 +1873,17 @@ class uncertaintyCalculator:
 
         # Inform where the output can be found.
         replace_strings = [
-            '_input_',
             '_input',
-            'input_',
             'input',
             computation_method,
             '.xlsx']
-        for replace_string in replace_strings:
-            if replace_string in filename:
-                filename = filename.replace(replace_string,'')
+        for string in replace_strings:
+            if string in out_file_name:
+                out_file_name = out_file_name.replace(string,'')
 
-        filename = path+ '/output_'+filename+'_'+str(
-            computation_method)
-        print("Writing results to "+filename+".xlsx")
+        out_file = os.path.join(path,out_file_name+'_'+str(
+            computation_method))
+        print("Writing results to "+out_file+".xlsx")
 
         # Add settings
         if any(self.partial_analysis_results[
@@ -1447,7 +1898,7 @@ class uncertaintyCalculator:
         settings_df["Options"] = [functional_relationship,
                                 computation_method,
                                 corrs]
-        if 'montecarlo' in computation_method:
+        if 'ucalc_montecarlo' in computation_method:
             settings_df.loc[len(settings_df.index)] = [
                 "Monte Carlo draws: ",
                 monte_carlo_draws]
@@ -1455,7 +1906,7 @@ class uncertaintyCalculator:
         # write data frames to excel
         correlation_matrix_df = data_frames[-1]
         data_frames = data_frames[:-1]
-        with pd.ExcelWriter(filename+".xlsx") as writer:
+        with pd.ExcelWriter(out_file+".xlsx") as writer:
             settings_df.to_excel(writer, sheet_name='settings',index=False)
             i = 0
             for frame in data_frames:
@@ -1471,14 +1922,16 @@ class uncertaintyCalculator:
                     writer,
                     sheet_name='correlation_matrix',
                     index=False)
+        return out_file
 
     def add_input_sheet_time_series(self):
         input_quantities_dictionary = self.input_dictionary[
             'input_quantities_dictionary']
         keys = list(input_quantities_dictionary.keys())
-        input_units = list()
-        for var in list(input_quantities_dictionary.values()):
-            input_units.append(var[0][1])
+        input_units = [i.split('|')[1] for i in self.input_dictionary['labels_and_units']]
+        #input_units = list()
+        #for var in list(input_quantities_dictionary.values()):
+        #    input_units.append(var[0][1])
 
         inputs_df = pd.DataFrame()
         inputs_df["Label"] = keys
@@ -1570,7 +2023,143 @@ class uncertaintyCalculator:
             outputs.loc[len(outputs.index)] = ["{:.0%} coverage interval".format(0.95), '', coverage_interval, output_unit]
         return outputs
 
-    # TODO Old, as the input dictionaries have been updated (see set functions below and initialize calculator).
+    def set_input_quantities(self,labels_and_units,values,time_stamps=None,computation_method=None):
+        """examples: labels_and_units = ['V1|m^3','V2|m^3','rho|(kg)/(m^3)']
+                    values = [[300e3,301e3,301e3],[180e3,179e3,180e3],[810.0,810.0,810.0]]
+
+
+                    - Each list in values connects to the corresponding label and unit in labels_and_units.
+                    - If time_stamps are not set, or does not match the number of samples in the input
+                    variables, and the input data has more than one sample of each variable,
+                    time_stamps is set to a default list ['t1','t2',...]. """
+        if computation_method == 'external_montecarlo':
+            self.input_dictionary['input_quantities_dictionary'] = values
+            self.input_dictionary['time_stamps'] = time_stamps
+
+        else:
+            input_quantities_dictionary = {}
+            for elmno in range(len(labels_and_units)):
+                elm = labels_and_units[elmno].split('|')
+                input_quantities_dictionary[elm[0]] = []
+                for t in range(len(values[0])):
+                    input_quantities_dictionary[elm[0]].append(
+                        [values[elmno][t],elm[1]])
+            self.input_dictionary['input_quantities_dictionary'] = input_quantities_dictionary
+
+            if len(values[0])>1 and time_stamps is None:
+                self.input_dictionary['time_stamps']=pd.DataFrame(
+                    ['t'+str(elm) for elm in list(range(1,len(values[0])+1))],
+                    columns=['time_stamp'])
+            if time_stamps is not None:
+                if len(values[0])>1 and len(time_stamps)!=len(values[0]):
+                    self.input_dictionary['time_stamps']=pd.DataFrame(
+                        ['t'+str(elm) for elm in list(range(1,len(values[0])+1))],
+                        columns=['time_stamp'])
+                elif len(values[0])>1 and len(time_stamps)==len(values[0]):
+                    self.input_dictionary['time_stamps'] = time_stamps
+
+        self.input_dictionary['labels_and_units'] = labels_and_units
+
+    def set_input_uncertainties(
+            self,values,confidences=None,distributions=None,limits=None):
+        """
+        example input:  values = [[9000,9000,9000],[5400,5400,5400],[0.81,0.81,0.81]]
+        confidence = [[0.95,0.95,0.95],[0.95,0.95,0.95],[0.95,0.95,0.95]]
+        distribution = [[normal,normal,normal],[triangular,triangular,triangular],[rectangular,rectangular,rectangular]]
+
+        these need to be saved to input dict, so monte carlo draws can access them later.
+        """
+        printed = False
+        allowed_distributions = ['normal',
+                                'rectangular',
+                                'triangular']
+
+        labels_and_units = self.input_dictionary['labels_and_units']
+        unc_dictionary = {}
+        distributions_dict = {}
+        confidences_dict = {}
+        limits_dict = {}
+        for elmno in range(len(labels_and_units)):
+            elm = labels_and_units[elmno].split('|')
+            unc_dictionary[elm[0]] = []
+            distributions_dict[elm[0]] = []
+            confidences_dict[elm[0]] = []
+            limits_dict[elm[0]] = []
+            for t in range(len(values[0])):
+                if distributions[elmno][t].lower() in allowed_distributions:
+                    distributions_dict[elm[0]].append(distributions[elmno][t])
+                else:
+                    distributions_dict[elm[0]].append('Normal')
+                    print('Warning: unnaccepted distributions {} detected,',
+                        'normal distribution is assumed.'.format(
+                        distributions[elmno][t].lower()))
+                confidences_dict[elm[0]].append(confidences[elmno][t])
+                unc_dictionary[elm[0]].append([values[elmno][t],elm[1]])
+                if not limits == None:
+                    limits_dict[elm[0]].append(limits[elmno][t])
+                    if not printed:
+                        #print('Note that truncated distributions will only be',
+                        #    'used with rectangular and Gaussian',
+                        #    'distributions and with computational',
+                        #    'method set to \'ucalc_montecarlo\'.')
+                        printed = True
+
+        self.input_dictionary['probability_distributions'] = distributions_dict
+        self.input_dictionary['confidences'] = confidences_dict
+        self.input_dictionary['input_uncertainties'] = unc_dictionary
+        if not limits == None:
+            self.input_dictionary['limits'] = limits_dict
+
+    def set_functional_relationship(self,functional_relationship):
+        """The functional relationship must contain all labels in self.input_dictionary['labels_and_units'].
+        It must be a Python valid math expression. To avoid potential confusion, use plenty if parantheses."""
+
+        ok = True
+        labels = [elm.split("|")[0] for elm in self.input_dictionary['labels_and_units']]
+        if not all(str(l) in functional_relationship for l in labels):
+            ok = False
+        if ok:
+            self.input_dictionary['functional_relationship'] = functional_relationship
+        else: raise Exception("Not all input labels are contained in the functional relationship.")
+
+    def set_computational_method(self,computation_method=None, monte_carlo_draws=10000):
+        """If no computational method is set, or an invalid computation method is set,
+        the default method is 'ucalc_montecarlo'.
+        Other options are 'analytical' and 'numerical'. """
+        if computation_method is None: computation_method = 'ucalc_montecarlo'
+        self.input_dictionary['computation_method'] = computation_method
+        self.input_dictionary['monte_carlo_draws'] = monte_carlo_draws
+
+    def set_output_labels_and_units(self,output_labels_and_units):
+        """example: labels_and_units = ['M|kg']"""
+        if isinstance(output_labels_and_units,list):
+            self.input_dictionary['out_var_label'] =  output_labels_and_units[0].split('|')[0]
+            self.input_dictionary['out_var_unit'] =  output_labels_and_units[0].split('|')[1]
+        if isinstance(output_labels_and_units,str):
+            self.input_dictionary['out_var_label'] =  output_labels_and_units.split('|')[0]
+            self.input_dictionary['out_var_unit'] =  output_labels_and_units.split('|')[1]
+
+    def set_correlation_matrix(self,correlation_matrix=None):
+        """example: correlation_matrix=[[0.9,0,0],[0,0,0],[0,0,0]].
+                    Each list corresponds to an upper triangular matrix, such that if
+                    self.input_dictionary['labels_and_units'] = ['V1|kg','V2|kg','rho|(kg)/(m^3)'],
+                    there is correlation between V1 and V2 at only at t1.
+                    If ignored, zero correlation is assumed.
+                    Zero correlation is also assumed if the correlation matrix does not
+                    match number of variables or length of time series"""
+        corr_mat = list()
+        time_len = len(self.input_dictionary['input_quantities_dictionary'][
+            self.input_dictionary['labels_and_units'][0].split('|')[0]])
+
+        if correlation_matrix is None or len(correlation_matrix)!=time_len: # The content of this if should probably be fixed.
+            for _ in range(len(self.input_dictionary['labels_and_units'])):
+                corr_mat.append([0]*time_len)
+
+
+        if len(corr_mat)==0:corr_mat = correlation_matrix
+        self.input_dictionary['list_correlation_matrix'] = corr_mat
+
+    # TODO Old, as the input dictionaries have been updated (see set-functions above and initialize_calculator).
     # This function also needs an update.
     def get_inputs_from_file(self,input_path,input_file,time_series=False):
         """It is not necessary to read inputs from a specific file format to run the calculator, but the input information must be passed
@@ -1682,141 +2271,8 @@ class uncertaintyCalculator:
 
         self.input_dictionary = in_d
 
-    def set_input_quantities(self,labels_and_units,values,time_stamps=None):
-        """examples: labels_and_units = ['V1|m^3','V2|m^3','rho|(kg)/(m^3)']
-                    values = [[300e3,301e3,301e3],[180e3,179e3,180e3],[810.0,810.0,810.0]]
 
-
-                    - Each list in values connects to the corresponding label and unit in labels_and_units.
-                    - If time_stamps are not set, or does not match the number of samples in the input
-                    variables, and the input data has more than one sample of each variable,
-                    time_stamps is set to a default list ['t1','t2',...]. """
-
-        input_quantities_dictionary = {}
-        for elmno in range(len(labels_and_units)):
-            elm = labels_and_units[elmno].split('|')
-            input_quantities_dictionary[elm[0]] = []
-            for t in range(len(values[0])):
-                input_quantities_dictionary[elm[0]].append(
-                    [values[elmno][t],elm[1]])
-
-        if len(values[0])>1 and time_stamps is None:
-            self.input_dictionary['time_stamps']=pd.DataFrame(
-                ['t'+str(elm) for elm in list(range(1,len(values[0])+1))],
-                columns=['time_stamp'])
-        if time_stamps is not None:
-            if len(values[0])>1 and len(time_stamps)!=len(values[0]):
-                self.input_dictionary['time_stamps']=pd.DataFrame(
-                    ['t'+str(elm) for elm in list(range(1,len(values[0])+1))],
-                    columns=['time_stamp'])
-            elif len(values[0])>1 and len(time_stamps)==len(values[0]):
-                self.input_dictionary['time_stamps'] = time_stamps
-
-        self.input_dictionary['input_quantities_dictionary'] = input_quantities_dictionary
-        self.input_dictionary['labels_and_units'] = labels_and_units
-
-    def set_input_uncertainties(
-            self,values,confidences=None,distributions=None,limits=None):
-        """
-        example input:  values = [[9000,9000,9000],[5400,5400,5400],[0.81,0.81,0.81]]
-        confidence = [[0.95,0.95,0.95],[0.95,0.95,0.95],[0.95,0.95,0.95]]
-        distribution = [[normal,normal,normal],[triangular,triangular,triangular],[rectangular,rectangular,rectangular]]
-
-        these need to be saved to input dict, so monte carlo draws can access them later.
-        """
-        printed = False
-        allowed_distributions = ['normal',
-                                'rectangular',
-                                'triangular']
-
-
-        labels_and_units = self.input_dictionary['labels_and_units']
-        unc_dictionary = {}
-        distributions_dict = {}
-        confidences_dict = {}
-        limits_dict = {}
-        for elmno in range(len(labels_and_units)):
-            elm = labels_and_units[elmno].split('|')
-            unc_dictionary[elm[0]] = []
-            distributions_dict[elm[0]] = []
-            confidences_dict[elm[0]] = []
-            limits_dict[elm[0]] = []
-            for t in range(len(values[0])):
-                if distributions[elmno][t].lower() in allowed_distributions:
-                    distributions_dict[elm[0]].append(distributions[elmno][t])
-                else:
-                    distributions_dict[elm[0]].append('Normal')
-                    print('Warning: unnaccepted distributions {} detected,',
-                        'normal distribution is assumed.'.format(
-                        distributions[elmno][t].lower()))
-                confidences_dict[elm[0]].append(confidences[elmno][t])
-                unc_dictionary[elm[0]].append([values[elmno][t],elm[1]])
-                if not limits == None:
-                    limits_dict[elm[0]].append(limits[elmno][t])
-                    if not printed:
-                        print('Note that truncated distributions will only be',
-                            'used with rectangular and Gaussian',
-                            'distributions and with computational',
-                            'method set to \'lhs_montecarlo\'.')
-                        printed = True
-
-        self.input_dictionary['probability_distributions'] = distributions_dict
-        self.input_dictionary['confidences'] = confidences_dict
-        self.input_dictionary['input_uncertainties'] = unc_dictionary
-        if not limits == None:
-            self.input_dictionary['limits'] = limits_dict
-
-    def set_functional_relationship(self,functional_relationship):
-        """The functional relationship must contain all labels in self.input_dictionary['labels_and_units'].
-        It must be a Python valid math expression. To avoid potential confusion, use plenty if parantheses."""
-
-        ok = True
-        labels = [elm.split("|")[0] for elm in self.input_dictionary['labels_and_units']]
-        if not all(str(l) in functional_relationship for l in labels):
-            ok = False
-        if ok:
-            self.input_dictionary['functional_relationship'] = functional_relationship
-        else: raise Exception("Not all input labels are contained in the functional relationship.")
-
-    def set_computational_method(self,computation_method=None, monte_carlo_draws=10000):
-        """If no computational method is set, or an invalid computation method is set,
-        the default method is 'lhs_montecarlo'.
-        Other options are 'analytical' and 'numerical'. """
-        if computation_method is None: computation_method = 'lhs_montecarlo'
-        self.input_dictionary['computation_method'] = computation_method
-        self.input_dictionary['monte_carlo_draws'] = monte_carlo_draws
-
-    def set_output_labels_and_units(self,output_labels_and_units):
-        """example: labels_and_units = ['M|kg']"""
-        if isinstance(output_labels_and_units,list):
-            self.input_dictionary['out_var_label'] =  output_labels_and_units[0].split('|')[0]
-            self.input_dictionary['out_var_unit'] =  output_labels_and_units[0].split('|')[1]
-        if isinstance(output_labels_and_units,str):
-            self.input_dictionary['out_var_label'] =  output_labels_and_units.split('|')[0]
-            self.input_dictionary['out_var_unit'] =  output_labels_and_units.split('|')[1]
-
-    def set_correlation_matrix(self,correlation_matrix=None):
-        """example: correlation_matrix=[[0.9,0,0],[0,0,0],[0,0,0]].
-                    Each list corresponds to an upper triangular matrix, such that if
-                    self.input_dictionary['labels_and_units'] = ['V1|kg','V2|kg','rho|(kg)/(m^3)'],
-                    there is correlation between V1 and V2 at only at t1.
-                    If ignored, zero correlation is assumed.
-                    Zero correlation is also assumed if the correlation matrix does not
-                    match number of variables or length of time series"""
-        corr_mat = list()
-        time_len = len(self.input_dictionary['input_quantities_dictionary'][
-            self.input_dictionary['labels_and_units'][0].split('|')[0]])
-        if correlation_matrix is None or len(correlation_matrix)!=time_len:
-            for _ in range(len(self.input_dictionary['labels_and_units'])):
-                corr_mat.append([0]*time_len)
-        if len(corr_mat)==0:
-            for i in range(time_len):
-                if len(correlation_matrix[i])!=len(self.input_dictionary['labels_and_units']):
-                    for _ in range(len(self.input_dictionary['labels_and_units'])):
-                        corr_mat.append([0]*time_len)
-        if len(corr_mat)==0:corr_mat = correlation_matrix
-        self.input_dictionary['list_correlation_matrix'] = corr_mat
-
+    # TODO: all plotting functions should not really belong to uncertaintyCalculator.
     def plot_simple_bar_budget(self,filepath=None):
         """Reads relevant parts of self.out_frames,
         and displays a barchart representing
@@ -1880,7 +2336,22 @@ class uncertaintyCalculator:
             if plot_type == 'relative':
                 contributions_df = contributions_df.drop(columns=['Total absolute uncertainty'])
             else:
-                contributions_df =contributions_df[['Time','Total absolute uncertainty']]
+                contributions_df =contributions_df.rename(columns = {'Total absolute uncertainty':'Total uncertainty'})
+                cols = [ x for x in list(contributions_df.columns) if "Total" not in x and "Time" not in x and 'Corr' not in x]
+                # update self.delta_out_var['quantity']
+                corrs = (contributions_df['Total uncertainty']/2).pow(2) - self.delta_out_var.pow(2).sum(axis=1) # self.delta_out_var # change in output variable per 1 stdv change in input variable.
+                correlations = corrs.copy()
+                correlations = pd.Series(np.where(corrs < 0 ,
+                                                -np.sqrt(np.array(np.abs(corrs),
+                                                                dtype=np.float64)),
+                                                                correlations))
+                correlations = pd.Series(np.where(corrs >= 0 , np.sqrt(np.array(np.abs(corrs),
+                                                                dtype=np.float64)), correlations))
+                contributions_df['Correlations & \nnonlinearity'] = 2*correlations
+
+                for col in cols:
+                    contributions_df[col] = 2*np.abs(self.delta_out_var[col])
+                contributions_df = contributions_df.drop(columns=['Total relative \nuncertainty'])
             # Go to long format
             contributions_df = pd.melt(
                 contributions_df,id_vars=list(
@@ -2016,8 +2487,8 @@ class uncertaintyCalculator:
         """Create the data frame containing uncertainty
         distributions for plotting time series results."""
 
-        standard_uncertainty = self.out_frames[3].iloc[:,2]
-        output_variable = self.out_frames[2].iloc[:,1]
+        standard_uncertainty = self.out_frames[3].iloc[:,2] # Absolute
+        output_variable = self.out_frames[2].iloc[:,1] # Value
 
         if self.input_dictionary[
             'computation_method'] == 'analytical':
@@ -2042,7 +2513,7 @@ class uncertaintyCalculator:
                 all_contributions).sum(axis=1))
         # TODO fix all_contributions so it works for montecarlo draws as well.
         if self.input_dictionary[
-            'computation_method'] == 'lhs_montecarlo':
+            'computation_method'] == 'ucalc_montecarlo': #TODO: This if is wrong. Test if works external_montecarlos. Not a problem for the m4h2 proj.
             all_contributions = pd.DataFrame()
 
             sensitivity = self.analysis_results['sensitivity_coefficients'].iloc[:,1:]
@@ -2069,6 +2540,31 @@ class uncertaintyCalculator:
             all_contributions[
                 'Total relative \nuncertainty'] = total
 
+        if self.input_dictionary[
+                'computation_method'] == 'external_montecarlo':
+            self.standard_dev['quantity'] = [ # Fix this magic string
+                i[0] for i in self.input_dictionary['input_uncertainties']['quantity']] # List of measurement abs unc.
+            sensitivity = self.analysis_results['sensitivity_coefficients'].iloc[:,1:]
+            contributions = 2*sensitivity*self.standard_dev /self.nominal
+            total = 2*self.analysis_results[
+                    'output_std_comb_rel_uncertainties'].iloc[:,1] # Total relative uncertainty
+            corrs = total.pow(2) - contributions.pow(2).sum(axis=1)
+            correlations = corrs.copy()
+            correlations = pd.Series(np.where(corrs < 0 ,
+                                            -np.sqrt(np.array(np.abs(corrs),
+                                                            dtype=np.float64)),
+                                                            correlations))
+            correlations = pd.Series(np.where(corrs >= 0 , np.sqrt(np.array(np.abs(corrs),
+                                                            dtype=np.float64)), correlations))
+
+            all_contributions = pd.concat(
+                [contributions,correlations],
+                axis=1)
+            all_contributions = all_contributions.rename(
+                columns={0:'Correlations & \nnonlinearity'})
+            all_contributions[
+                'Total relative \nuncertainty'] = total
+
         # To get values in percent.
         all_contributions = all_contributions*100
 
@@ -2077,3 +2573,56 @@ class uncertaintyCalculator:
             'Total absolute uncertainty'] = 2*self.analysis_results['output_std_comb_uncertainties'].iloc[:,2]
         all_contributions['Absolute values'] = output_variable
         return all_contributions
+
+
+
+if __name__ == "__main__":
+
+    ucalc =  uncertaintyCalculator()
+
+    # Define general input for a sample functional relationship with 3 input variables and two time points
+    functional_relationship = '(V + V2)*rho'                   # Define functional relationship
+    labels_and_units = ['V|m^3','V2|m^3','rho|(kg)/(m3)']     # Define input variables and units for each input variable
+    output_label_and_unit = ['M|kg']                            # Define output variable and corresponding unit
+    time_points = 2                                             # Define number of time points
+
+    # Define values for each input variable and time point
+    values = [[300e3,301e3],           # V1 for time point 1 & 2
+            [180e3,179e3],             # V2 for time point 1 & 2
+            time_points*[0]]       # rho for time point 1 & 2
+
+    # Define timestamps for each time point
+    # If time_stamps are not set, but there are several time points, these are set to 't1', 't2', ... etc by default instead of using date and time format.
+    time_stamps = pd.DataFrame({'unix_timestamp':pd.to_datetime(['2022-02-06 12:00',    # Time point 1
+                                                                '2022-02-06 13:00'])})  # Time point 2
+    # Define input uncertainties.
+    uncertainties  = [time_points*[0.03],  # V1
+                    time_points*[0.03],    # V2
+                    time_points*[0.01]]    # rho
+    distributions = [['normal','normal'],  # V1
+                    ['normal','normal'],   # V2
+                    ['normal','normal']]   # rho
+    confidences =   [[0.95,0.95], # V1
+                    [0.95,0.95],  # V2
+                    [0.95,0.95]]  # rho
+    correlation_matrix=[[0.9,0.1,0.1],[0.9,0.1,0.1]]
+
+    # Set input and output quantities and functional relationship in uncertainty calculator.
+    # It is important to define the input quantities first.
+    ucalc.set_input_quantities(labels_and_units,values,time_stamps=time_stamps)
+    ucalc.set_output_labels_and_units(output_label_and_unit)
+    ucalc.set_input_uncertainties(uncertainties,
+                                confidences=confidences,
+                                distributions=distributions)
+    ucalc.set_functional_relationship(functional_relationship)
+    ucalc.set_computational_method('ucalc_montecarlo') # could be analytical, numerical, external_montecarlo, or ucalc_montecarlo
+    ### TODO: If ucalc_montecarlo is set, you can set self.input_dictionary['limits'] 
+    # to a dictionary with: {variable1: [[lower_limit_t1,upper_limit_t1],[lower_limit_t2,upper_limit_t2],...],variable2:[...]}
+
+    ucalc.set_correlation_matrix(correlation_matrix=correlation_matrix)
+
+    ucalc.initialize_calculator()
+    ucalc.perform_uncertainty_analysis()
+    ucalc.output_to_excel(os.getcwd(),'mc.xlsx')
+
+    a = 0

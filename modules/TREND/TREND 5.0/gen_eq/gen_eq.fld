@@ -1,6 +1,0 @@
-FLUID           ALTERNATIVE NAME  	CAS-NR       	M / (g/mol)	Acentr. Fac.    rhocrit / mol/l Tcrit / K	Ptr / MPa	Ttr / K		polfac_eq         
-oil		oil			111-11-1	1773.0		0.0120177537	0.14028156	1413.697920257	0.000001D-07	0.1		-0.0020000000
-acetone		acetone			67-64-1		58.07914	0.307		4.7		508.1		0.2326D-05	178.500		0
-co2		co2			124-38-9	44.0098		0.224		7.3773		304.1282	0.51795D+00	216.592		0
-methane         methane	                74-82-8         16.0428	        0.011	        4.5992          190.564         0.11696D-01     90.6941         0
-@END

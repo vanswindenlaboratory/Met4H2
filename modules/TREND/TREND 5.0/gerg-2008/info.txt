@@ -1,6 +1,0 @@
-In the subfolders 
-FLUIDS
-and
-BINARY_MIX_FILES
-are the pure fluide EOS and mixing rules of the GERG-2008 model stored. 
-They can be used without changing any @ into a #.
