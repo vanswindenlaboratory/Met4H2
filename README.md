@@ -31,3 +31,6 @@ the Participating States.
 
 ## License
 This code is provided under the Creative Commons Attribution 4.0 International Public License.
+
+## DOI
+[![DOI](https://zenodo.org/badge/590051867.svg)](https://doi.org/10.5281/zenodo.17456112)
