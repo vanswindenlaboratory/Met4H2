@@ -21,9 +21,6 @@ Please refer to the *venvm4h2.yml* file for more details on the required librari
 ## Documentation
 Please refer to the *m4h2_doc.pdf* file for the software documentation.
 
-## Software validation
-Has any validation been performed?
-
 ## Related projects
 EPM [21GRD05 Met4H2](https://met4h2.eu/) - Metrology for the hydrogen supply chain (Oct 2022 - Sep 2025).
 
