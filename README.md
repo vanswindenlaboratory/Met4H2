@@ -1,20 +1,33 @@
-# Met4H2
+# Met4H2 software framework for uncertainty calculations
+This repository contains a software platform implementing a methodology for the 
+calculation of the total quantity and total energy along the hydrogen supply chain. 
+The software allows the specification of input parameters and associated uncertainties,
+selection of measurands, calculation of combined uncertainties, and reporting 
+functionality of uncertainty budgets. 
 
-## Rules for commit and working together
-There shall always be two long-term branches:
-* Branch _main_ shall contain a working version
-* Branch _dev_ shall contain the developments for the next release
+The software has been developed in a modular fashion such that it can be expanded 
+with, e.g., new calculation models for auxiliary parameters, novel measurement methods 
+and equipment, etc.
 
-When working on a new task (e.g. fixing a bug, adding a feature, etc.)
-1. Create branch from _dev_ for the task at hand. The name of the branch should be representative of the task at hand.
-2. Clone cloud repository to local folder
-3. Make your changes locally
-4. Update local branch with changes of _dev_ and resolve potential inconsistency and bugs.
-5. Commit and push changes to the branch in the cloud
-6. Merge branch with _dev_
+The uncertainty evaluation is based on ISO/IEC Guide 98 (Guide to the expression of Uncertainty 
+in Measurement) and it has been adapted for specific use regarding combined measurmeent 
+uncertainty of quantities and energy content of energy gases such as hydrogen-based fluids.
 
-Underlying ideas: 
-* Commit only working code
-* Define tasks small enough that allow frequent commits so it is easier to backtrack the origin of bugs
+## Dependencies Requirements
+The scripts have been developed using Python 3.9.17.
 
-Follow as much as possible good programming practices as described by PEP8 https://peps.python.org/pep-0008/#programming-recommendations 
+Please refer to the *venvm4h2.yml* file for more details on the required libraries.
+
+## Documentation
+Please refer to the *m4h2_doc.pdf* file for the software documentation.
+
+## Related projects
+EPM [21GRD05 Met4H2](https://met4h2.eu/) - Metrology for the hydrogen supply chain (Oct 2022 - Sep 2025).
+
+## Acknowledgment
+The project 21GRD05 (Met4H2) has received funding from the European Partnership on Metrology, 
+co-financed from the European Union's Horizon Europe Research and Innovation Programme and by 
+the Participating States.
+
+## License
+This code is provided under the Creative Commons Attribution 4.0 International Public License.

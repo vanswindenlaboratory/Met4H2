@@ -1,4 +1,0 @@
-!Here you can define macros for some actual unused variables
-
-! 1) Always is zero in fnrderivs and vle_derivs
-#DEFINE ACCESS_KIJ_HELM(i,j) 0.d0 !old code: gl%kij_Helm (if needed enable in modules!)
